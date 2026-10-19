@@ -2,6 +2,7 @@ package com.egymusic.player;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ContentUris;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -175,6 +176,10 @@ public class MainActivity extends Activity {
             Toast.makeText(this, "تم تبديل وضع التكرار", Toast.LENGTH_SHORT).show();
         });
         controls.addView(repeat);
+        Button timer = controlButton("⏱");
+        timer.setTextSize(16);
+        timer.setOnClickListener(v -> showSleepTimer());
+        controls.addView(timer);
         Button equalizer = controlButton("🎚");
         equalizer.setTextSize(16);
         equalizer.setOnClickListener(v -> {
@@ -301,6 +306,17 @@ public class MainActivity extends Activity {
             empty.setPadding(dp(4), dp(22), dp(4), dp(22));
             list.addView(empty);
         }
+    }
+
+    private void showSleepTimer() {
+        String[] choices = {"بعد 15 دقيقة", "بعد 30 دقيقة", "بعد 45 دقيقة", "بعد ساعة", "بعد ساعة ونصف", "إلغاء مؤقت النوم"};
+        int[] minutes = {15, 30, 45, 60, 90, 0};
+        new AlertDialog.Builder(this).setTitle("مؤقت النوم").setItems(choices, (dialog, which) -> {
+            Intent intent = new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_SLEEP_TIMER);
+            intent.putExtra(PlaybackService.EXTRA_TIMER_MINUTES, minutes[which]);
+            startServiceCompat(intent);
+            Toast.makeText(this, minutes[which] == 0 ? "تم إلغاء مؤقت النوم" : "الموسيقى هتقف بعد " + minutes[which] + " دقيقة", Toast.LENGTH_SHORT).show();
+        }).show();
     }
 
     private void saveFavorites() {
