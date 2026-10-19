@@ -173,6 +173,13 @@ public class MainActivity extends Activity {
             Toast.makeText(this, "تم تبديل وضع التكرار", Toast.LENGTH_SHORT).show();
         });
         controls.addView(repeat);
+        Button equalizer = controlButton("🎚");
+        equalizer.setTextSize(16);
+        equalizer.setOnClickListener(v -> {
+            Intent intent = new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_EQUALIZER);
+            startServiceCompat(intent);
+        });
+        controls.addView(equalizer);
     }
 
     private TextView tabButton(String label) {
