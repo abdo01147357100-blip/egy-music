@@ -99,7 +99,6 @@ public class MainActivity extends Activity {
         subtitle.setText("موسيقاك.. على مزاجك");
         subtitle.setTextColor(Color.LTGRAY);
         subtitle.setTextSize(14);
-            title.setTypeface(null, 1);
         root.addView(subtitle, new LinearLayout.LayoutParams(-1, dp(24)));
 
         LinearLayout hero = new LinearLayout(this);
