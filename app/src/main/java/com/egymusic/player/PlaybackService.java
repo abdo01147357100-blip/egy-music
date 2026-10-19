@@ -28,6 +28,9 @@ public class PlaybackService extends Service {
     public static final String ACTION_REPEAT = "com.egymusic.player.REPEAT";
     public static final String ACTION_EQUALIZER = "com.egymusic.player.EQUALIZER";
     public static final String ACTION_SLEEP_TIMER = "com.egymusic.player.SLEEP_TIMER";
+    public static final String ACTION_SEEK = "com.egymusic.player.SEEK";
+    public static final String ACTION_GET_PROGRESS = "com.egymusic.player.GET_PROGRESS";
+    public static final String EXTRA_SEEK_POSITION = "seek_position";
     public static final String EXTRA_TIMER_MINUTES = "timer_minutes";
     public static final String EXTRA_INDEX = "index";
     public static final String EXTRA_URIS = "uris";
@@ -95,6 +98,11 @@ public class PlaybackService extends Service {
             Log.i("EGY MUSIC", "Repeat enabled: " + repeatEnabled);
         } else if (ACTION_EQUALIZER.equals(action)) {
             openEqualizer();
+        } else if (ACTION_SEEK.equals(action)) {
+            int position = intent.getIntExtra(EXTRA_SEEK_POSITION, 0);
+            if (player != null && prepared) { try { player.seekTo(Math.max(0, Math.min(position, player.getDuration()))); updateSession(player.isPlaying() ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED); } catch (Exception e) { Log.w("EGY MUSIC", "Seek failed", e); } }
+        } else if (ACTION_GET_PROGRESS.equals(action)) {
+            // The service remains the single owner of playback state.
         } else if (ACTION_SLEEP_TIMER.equals(action)) {
             int minutes = intent.getIntExtra(EXTRA_TIMER_MINUTES, 0);
             if (sleepTimerRunnable != null) timerHandler.removeCallbacks(sleepTimerRunnable);
