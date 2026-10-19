@@ -148,14 +148,14 @@ public class MainActivity extends Activity {
         controls.setGravity(Gravity.CENTER);
         dock.addView(controls);
         Button prev = controlButton("⏮");
-        prev.setOnClickListener(v -> playIndex(Math.max(0, current - 1)));
+        prev.setOnClickListener(v -> startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_PREVIOUS)));
         controls.addView(prev);
         Button play = controlButton("▶");
         playButton = play;
         play.setOnClickListener(v -> togglePlayback());
         controls.addView(play);
         Button next = controlButton("⏭");
-        next.setOnClickListener(v -> playIndex(Math.min(songs.size() - 1, current + 1)));
+        next.setOnClickListener(v -> startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_NEXT)));
         controls.addView(next);
         Button shuffle = controlButton("🔀");
         shuffle.setTextSize(16);
