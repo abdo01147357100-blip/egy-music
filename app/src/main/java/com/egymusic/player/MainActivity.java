@@ -16,6 +16,8 @@ import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -27,6 +29,7 @@ import android.widget.LinearLayout;
 import android.widget.ImageView;
 import android.widget.HorizontalScrollView;
 import android.widget.ScrollView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import java.util.ArrayList;
@@ -52,6 +55,27 @@ public class MainActivity extends Activity {
     private int accent = Color.rgb(255, 91, 116);
     private int panel = Color.rgb(28, 27, 36);
     private SharedPreferences prefs;
+    private AlertDialog fullPlayerDialog;
+    private SeekBar progressBar;
+    private TextView fullTitle, fullArtist, elapsedText, durationText;
+    private int durationMillis = 0;
+    private boolean userSeeking = false;
+    private final Handler playerUiHandler = new Handler(Looper.getMainLooper());
+    private final BroadcastReceiver progressReceiver = new BroadcastReceiver() {
+        @Override public void onReceive(Context context, Intent intent) {
+            durationMillis = intent.getIntExtra(PlaybackService.EXTRA_DURATION, 0);
+            int position = intent.getIntExtra(PlaybackService.EXTRA_POSITION, 0);
+            boolean playing = intent.getBooleanExtra(PlaybackService.EXTRA_IS_PLAYING, false);
+            String title = intent.getStringExtra(PlaybackService.EXTRA_CURRENT_TITLE);
+            String artist = intent.getStringExtra(PlaybackService.EXTRA_CURRENT_ARTIST);
+            if (fullTitle != null && title != null) fullTitle.setText(title);
+            if (fullArtist != null && artist != null) fullArtist.setText(artist);
+            if (progressBar != null && !userSeeking) progressBar.setProgress(durationMillis > 0 ? (int)(position * 1000L / durationMillis) : 0);
+            if (elapsedText != null) elapsedText.setText(formatTime(position));
+            if (durationText != null) durationText.setText(formatTime(durationMillis));
+            if (playButton != null) playButton.setText(playing ? "⏸" : "▶");
+        }
+    };
 
     static class Song {
         long id;
@@ -80,6 +104,9 @@ public class MainActivity extends Activity {
         }
         getWindow().setStatusBarColor(Color.rgb(16,17,22));
         getWindow().setNavigationBarColor(Color.rgb(16,17,22));
+        IntentFilter progressFilter = new IntentFilter(PlaybackService.ACTION_PROGRESS_UPDATE);
+        if (Build.VERSION.SDK_INT >= 33) registerReceiver(progressReceiver, progressFilter, Context.RECEIVER_NOT_EXPORTED);
+        else registerReceiver(progressReceiver, progressFilter);
         IntentFilter progressFilter = new IntentFilter(PlaybackService.ACTION_PROGRESS_UPDATE);
         if (Build.VERSION.SDK_INT >= 33) registerReceiver(progressReceiver, progressFilter, Context.RECEIVER_NOT_EXPORTED);
         else registerReceiver(progressReceiver, progressFilter);
@@ -237,6 +264,7 @@ public class MainActivity extends Activity {
         miniLabels.setOrientation(LinearLayout.VERTICAL);
         miniLabels.setPadding(dp(10), 0, dp(8), 0);
         miniRow.addView(miniLabels, new LinearLayout.LayoutParams(0, -2, 1));
+        miniRow.setOnClickListener(v -> showFullPlayer());
         nowPlaying = new TextView(this);
         nowPlaying.setText("اختار أغنية للبدء");
         nowPlaying.setTextColor(Color.WHITE);
@@ -583,6 +611,84 @@ public class MainActivity extends Activity {
         }
         editor.apply();
     }
+
+    private String formatTime(int millis) {
+        int total = Math.max(0, millis) / 1000;
+        return String.format(java.util.Locale.ROOT, "%d:%02d", total / 60, total % 60);
+    }
+
+    private void showFullPlayer() {
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setGravity(Gravity.CENTER_HORIZONTAL);
+        content.setPadding(dp(22), dp(18), dp(22), dp(12));
+        content.setBackgroundColor(Color.rgb(18, 16, 24));
+        TextView heading = new TextView(this);
+        heading.setText("يتم التشغيل الآن"); heading.setTextColor(accent); heading.setTextSize(14); heading.setGravity(Gravity.CENTER);
+        content.addView(heading, new LinearLayout.LayoutParams(-1, dp(32)));
+        ImageView cover = new ImageView(this); cover.setScaleType(ImageView.ScaleType.CENTER_CROP); cover.setBackground(makePill(panel));
+        if (current >= 0 && current < songs.size() && songs.get(current).artworkUri != null) {
+            try { cover.setImageURI(songs.get(current).artworkUri); } catch (Exception ignored) {}
+        }
+        if (cover.getDrawable() == null) { cover.setImageResource(android.R.drawable.ic_media_play); cover.setColorFilter(accent); }
+        LinearLayout.LayoutParams coverParams = new LinearLayout.LayoutParams(dp(240), dp(240));
+        coverParams.topMargin = dp(10); coverParams.bottomMargin = dp(18); content.addView(cover, coverParams);
+        fullTitle = new TextView(this); fullTitle.setTextColor(Color.WHITE); fullTitle.setTextSize(21); fullTitle.setTypeface(null, 1); fullTitle.setGravity(Gravity.CENTER); fullTitle.setMaxLines(2);
+        content.addView(fullTitle, new LinearLayout.LayoutParams(-1, -2));
+        fullArtist = new TextView(this); fullArtist.setTextColor(Color.LTGRAY); fullArtist.setTextSize(14); fullArtist.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams artistParams = new LinearLayout.LayoutParams(-1, -2); artistParams.topMargin = dp(5); content.addView(fullArtist, artistParams);
+        progressBar = new SeekBar(this); progressBar.setMax(1000); progressBar.setProgressTintList(android.content.res.ColorStateList.valueOf(accent)); progressBar.setThumbTintList(android.content.res.ColorStateList.valueOf(accent));
+        LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(-1, -2); seekParams.topMargin = dp(18); content.addView(progressBar, seekParams);
+        LinearLayout times = new LinearLayout(this); times.setGravity(Gravity.CENTER_VERTICAL); content.addView(times, new LinearLayout.LayoutParams(-1, dp(22)));
+        elapsedText = new TextView(this); elapsedText.setTextColor(Color.LTGRAY); elapsedText.setTextSize(11); times.addView(elapsedText, new LinearLayout.LayoutParams(0, -2, 1));
+        durationText = new TextView(this); durationText.setTextColor(Color.LTGRAY); durationText.setTextSize(11); durationText.setGravity(Gravity.RIGHT); times.addView(durationText, new LinearLayout.LayoutParams(0, -2, 1));
+        progressBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) { if (fromUser && elapsedText != null) elapsedText.setText(formatTime(value * durationMillis / 1000)); }
+            @Override public void onStartTrackingTouch(SeekBar bar) { userSeeking = true; }
+            @Override public void onStopTrackingTouch(SeekBar bar) {
+                userSeeking = false;
+                Intent seek = new Intent(MainActivity.this, PlaybackService.class).setAction(PlaybackService.ACTION_SEEK);
+                seek.putExtra(PlaybackService.EXTRA_SEEK_POSITION, bar.getProgress() * durationMillis / 1000);
+                startServiceCompat(seek);
+            }
+        });
+        LinearLayout controls = new LinearLayout(this); controls.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams controlParams = new LinearLayout.LayoutParams(-1, dp(66)); controlParams.topMargin = dp(14); content.addView(controls, controlParams);
+        TextView previous = playerControl("⏮", 25), play = playerControl("⏯", 32), next = playerControl("⏭", 25);
+        controls.addView(previous, new LinearLayout.LayoutParams(dp(64), dp(58)));
+        controls.addView(play, new LinearLayout.LayoutParams(dp(80), dp(62)));
+        controls.addView(next, new LinearLayout.LayoutParams(dp(64), dp(58)));
+        previous.setOnClickListener(v -> startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_PREVIOUS)));
+        next.setOnClickListener(v -> startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_NEXT)));
+        play.setOnClickListener(v -> togglePlayback());
+        TextView tools = new TextView(this); tools.setText("🔀 عشوائي     🔁 تكرار     🎚 معادل الصوت     ⏱ مؤقت النوم"); tools.setTextColor(accent); tools.setGravity(Gravity.CENTER); tools.setTextSize(12);
+        LinearLayout.LayoutParams toolsParams = new LinearLayout.LayoutParams(-1, dp(44)); toolsParams.topMargin = dp(5); content.addView(tools, toolsParams);
+        tools.setOnClickListener(v -> new AlertDialog.Builder(this).setTitle("أدوات التشغيل").setItems(new String[]{"تبديل التشغيل العشوائي", "تبديل التكرار", "فتح معادل الصوت", "مؤقت النوم"}, (d, which) -> {
+            if (which == 0) startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_SHUFFLE));
+            else if (which == 1) startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_REPEAT));
+            else if (which == 2) startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_EQUALIZER));
+            else showSleepTimer();
+        }).show());
+        if (current >= 0 && current < songs.size()) { fullTitle.setText(songs.get(current).title); fullArtist.setText(songs.get(current).artist); }
+        AlertDialog dialog = new AlertDialog.Builder(this).setView(content).setNegativeButton("إغلاق", null).create();
+        fullPlayerDialog = dialog;
+        dialog.setOnDismissListener(d -> { fullPlayerDialog = null; progressBar = null; fullTitle = null; fullArtist = null; elapsedText = null; durationText = null; playerUiHandler.removeCallbacks(playerUiUpdater); });
+        dialog.show();
+        if (dialog.getWindow() != null) { dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent); dialog.getWindow().setLayout(-1, -1); }
+        playerUiHandler.removeCallbacks(playerUiUpdater); playerUiHandler.post(playerUiUpdater);
+    }
+
+    private TextView playerControl(String label, int size) {
+        TextView t = new TextView(this); t.setText(label); t.setTextSize(size); t.setTextColor(Color.WHITE); t.setGravity(Gravity.CENTER); t.setBackground(makePill(panel)); return t;
+    }
+
+    private final Runnable playerUiUpdater = new Runnable() {
+        @Override public void run() {
+            if (fullPlayerDialog == null || !fullPlayerDialog.isShowing()) return;
+            startServiceCompat(new Intent(MainActivity.this, PlaybackService.class).setAction(PlaybackService.ACTION_GET_PROGRESS));
+            playerUiHandler.postDelayed(this, 1000);
+        }
+    };
 
     private void showSleepTimer() {
         String[] choices = {"بعد 15 دقيقة", "بعد 30 دقيقة", "بعد 45 دقيقة", "بعد ساعة", "بعد ساعة ونصف", "إلغاء مؤقت النوم"};
