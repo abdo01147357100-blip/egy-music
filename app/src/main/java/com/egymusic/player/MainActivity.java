@@ -52,8 +52,8 @@ public class MainActivity extends Activity {
     private EditText search;
     private boolean showFavorites = false;
     private int libraryMode = 0;
-    private int accent = Color.rgb(255, 91, 116);
-    private int panel = Color.rgb(28, 27, 36);
+    private int accent = Color.rgb(176, 76, 255);
+    private int panel = Color.rgb(18, 27, 49);
     private SharedPreferences prefs;
     private AlertDialog fullPlayerDialog;
     private SeekBar progressBar;
@@ -126,20 +126,22 @@ public class MainActivity extends Activity {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(dp(16), dp(12), dp(16), dp(8));
-        root.setBackgroundColor(Color.rgb(13, 13, 19));
+        GradientDrawable screenBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                new int[]{Color.rgb(5, 12, 31), Color.rgb(13, 14, 34), Color.rgb(24, 10, 35)});
+        root.setBackground(screenBg);
         setContentView(root);
 
         TextView brand = new TextView(this);
-        brand.setText("EGY MUSIC  ♫");
-        brand.setTextColor(accent);
-        brand.setTextSize(27);
+        brand.setText("♫  EGY MUSIC");
+        brand.setTextColor(Color.rgb(204, 147, 255));
+        brand.setTextSize(29);
         brand.setLetterSpacing(0.06f);
         brand.setGravity(Gravity.CENTER_VERTICAL);
         brand.setTypeface(null, 1);
         root.addView(brand, new LinearLayout.LayoutParams(-1, dp(48)));
 
         TextView subtitle = new TextView(this);
-        subtitle.setText("موسيقاك.. على مزاجك");
+        subtitle.setText("اسمع إحساسك • كل أغانيك في مكان واحد");
         subtitle.setTextColor(Color.LTGRAY);
         subtitle.setTextSize(14);
         root.addView(subtitle, new LinearLayout.LayoutParams(-1, dp(24)));
@@ -148,22 +150,22 @@ public class MainActivity extends Activity {
         hero.setGravity(Gravity.CENTER_VERTICAL);
         hero.setPadding(dp(16), dp(14), dp(14), dp(14));
         GradientDrawable heroBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                new int[]{Color.rgb(111, 63, 156), Color.rgb(195, 59, 104), Color.rgb(244, 104, 91)});
+                new int[]{Color.rgb(43, 53, 151), Color.rgb(108, 38, 183), Color.rgb(210, 42, 132)});
         heroBg.setCornerRadius(dp(22));
         hero.setBackground(heroBg);
-        LinearLayout.LayoutParams heroParams = new LinearLayout.LayoutParams(-1, dp(112));
+        LinearLayout.LayoutParams heroParams = new LinearLayout.LayoutParams(-1, dp(132));
         heroParams.topMargin = dp(10);
         root.addView(hero, heroParams);
         LinearLayout heroText = new LinearLayout(this);
         heroText.setOrientation(LinearLayout.VERTICAL);
         hero.addView(heroText, new LinearLayout.LayoutParams(0, -2, 1));
         TextView heroEyebrow = new TextView(this);
-        heroEyebrow.setText("صوتك، مزاجك، عالمك");
+        heroEyebrow.setText("مرحبًا بك في عالمك الموسيقي");
         heroEyebrow.setTextColor(Color.rgb(255, 225, 232));
         heroEyebrow.setTextSize(12);
         heroText.addView(heroEyebrow);
         TextView heroTitle = new TextView(this);
-        heroTitle.setText("خلّي الموسيقى تعيش معاك");
+        heroTitle.setText("موسيقاك. مزاجك. عالمك.");
         heroTitle.setTextColor(Color.WHITE);
         heroTitle.setTextSize(18);
         heroTitle.setTypeface(null, 1);
@@ -192,13 +194,14 @@ public class MainActivity extends Activity {
         search = new EditText(this);
         search.setSingleLine(true);
         search.setTextSize(15);
-        search.setHint("ابحث عن أغنية أو فنان...");
+        search.setHint("⌕  ابحث عن أغنية أو فنان أو ألبوم");
         search.setHintTextColor(Color.GRAY);
         search.setTextColor(Color.WHITE);
         search.setPadding(dp(16), 0, dp(16), 0);
         GradientDrawable searchBg = new GradientDrawable();
-        searchBg.setColor(panel);
-        searchBg.setCornerRadius(dp(16));
+        searchBg.setColor(Color.rgb(16, 25, 46));
+        searchBg.setCornerRadius(dp(18));
+        searchBg.setStroke(dp(1), Color.rgb(53, 63, 111));
         search.setBackground(searchBg);
         LinearLayout.LayoutParams searchParams = new LinearLayout.LayoutParams(-1, dp(48));
         searchParams.topMargin = dp(14);
@@ -245,8 +248,9 @@ public class MainActivity extends Activity {
         dock.setOrientation(LinearLayout.VERTICAL);
         dock.setPadding(dp(12), dp(10), dp(12), dp(6));
         GradientDrawable dockBg = new GradientDrawable();
-        dockBg.setColor(Color.rgb(29, 27, 37));
-        dockBg.setCornerRadius(dp(20));
+        dockBg.setColor(Color.rgb(14, 23, 43));
+        dockBg.setCornerRadius(dp(22));
+        dockBg.setStroke(dp(1), Color.rgb(47, 56, 102));
         dock.setBackground(dockBg);
         LinearLayout.LayoutParams dockParams = new LinearLayout.LayoutParams(-1, -2);
         dockParams.topMargin = dp(8);
@@ -336,7 +340,7 @@ public class MainActivity extends Activity {
         for (int i = 0; i < tabs.length; i++) {
             boolean selected = i == libraryMode || (i == 4 && libraryMode == 5);
             tabs[i].setTextColor(selected ? accent : Color.LTGRAY);
-            tabs[i].setBackground(makePill(selected ? Color.rgb(67, 34, 52) : panel));
+            tabs[i].setBackground(makePill(selected ? Color.rgb(54, 34, 101) : Color.rgb(14, 23, 42)));
             tabs[i].setTextSize(11);
         }
     }
@@ -344,7 +348,7 @@ public class MainActivity extends Activity {
     private GradientDrawable makePill(int color) {
         GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(color);
-        drawable.setCornerRadius(dp(15));
+        drawable.setCornerRadius(dp(18));
         return drawable;
     }
 
@@ -402,10 +406,10 @@ public class MainActivity extends Activity {
             final int index = i;
             LinearLayout row = new LinearLayout(this);
             row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setPadding(dp(9), dp(8), dp(6), dp(8));
-            row.setBackground(makePill(current == i ? Color.rgb(62, 34, 51) : Color.rgb(25, 24, 32)));
+            row.setPadding(dp(10), dp(10), dp(8), dp(10));
+            row.setBackground(makePill(current == i ? Color.rgb(43, 34, 83) : Color.rgb(14, 23, 42)));
             LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, -2);
-            rp.bottomMargin = dp(7);
+            rp.bottomMargin = dp(9);
             list.addView(row, rp);
 
             ImageView icon = new ImageView(this);
@@ -420,7 +424,7 @@ public class MainActivity extends Activity {
                 icon.setColorFilter(accent);
             }
             icon.setClipToOutline(true);
-            row.addView(icon, new LinearLayout.LayoutParams(dp(54), dp(54)));
+            row.addView(icon, new LinearLayout.LayoutParams(dp(60), dp(60)));
 
             LinearLayout labels = new LinearLayout(this);
             labels.setOrientation(LinearLayout.VERTICAL);
