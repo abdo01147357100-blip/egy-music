@@ -4,6 +4,9 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ContentUris;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.IntentFilter;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -77,6 +80,9 @@ public class MainActivity extends Activity {
         }
         getWindow().setStatusBarColor(Color.rgb(16,17,22));
         getWindow().setNavigationBarColor(Color.rgb(16,17,22));
+        IntentFilter progressFilter = new IntentFilter(PlaybackService.ACTION_PROGRESS_UPDATE);
+        if (Build.VERSION.SDK_INT >= 33) registerReceiver(progressReceiver, progressFilter, Context.RECEIVER_NOT_EXPORTED);
+        else registerReceiver(progressReceiver, progressFilter);
         buildUi();
         if (hasAudioPermission()) loadSongs();
         else requestPermissions(new String[]{audioPermission()}, AUDIO_PERMISSION);
@@ -658,6 +664,8 @@ public class MainActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
+        playerUiHandler.removeCallbacks(playerUiUpdater);
+        try { unregisterReceiver(progressReceiver); } catch (Exception ignored) {}
         super.onDestroy();
     }
     private int dp(float value) { return (int)(value * getResources().getDisplayMetrics().density + 0.5f); }
