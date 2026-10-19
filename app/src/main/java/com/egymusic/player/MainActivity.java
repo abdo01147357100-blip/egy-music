@@ -209,20 +209,24 @@ public class MainActivity extends Activity {
             @Override public void afterTextChanged(Editable e) {}
         });
 
+        HorizontalScrollView tabScroller = new HorizontalScrollView(this);
+        tabScroller.setHorizontalScrollBarEnabled(false);
+        tabScroller.setFillViewport(false);
         LinearLayout tabs = new LinearLayout(this);
         tabs.setGravity(Gravity.CENTER_VERTICAL);
         tabs.setPadding(0, dp(12), 0, dp(8));
-        root.addView(tabs);
+        tabScroller.addView(tabs);
+        root.addView(tabScroller, new LinearLayout.LayoutParams(-1, dp(62)));
         allTab = tabButton("♫ الأغاني");
         albumsTab = tabButton("▦ الألبومات");
         artistsTab = tabButton("♬ الفنانون");
         favoritesTab = tabButton("♥ المفضلة");
         playlistsTab = tabButton("☷ القوائم");
-        tabs.addView(allTab, new LinearLayout.LayoutParams(0, dp(42), 1));
-        tabs.addView(albumsTab, new LinearLayout.LayoutParams(0, dp(42), 1));
-        tabs.addView(artistsTab, new LinearLayout.LayoutParams(0, dp(42), 1));
-        tabs.addView(favoritesTab, new LinearLayout.LayoutParams(0, dp(42), 1));
-        tabs.addView(playlistsTab, new LinearLayout.LayoutParams(0, dp(42), 1));
+        tabs.addView(allTab, new LinearLayout.LayoutParams(dp(94), dp(42)));
+        tabs.addView(albumsTab, new LinearLayout.LayoutParams(dp(104), dp(42)));
+        tabs.addView(artistsTab, new LinearLayout.LayoutParams(dp(100), dp(42)));
+        tabs.addView(favoritesTab, new LinearLayout.LayoutParams(dp(104), dp(42)));
+        tabs.addView(playlistsTab, new LinearLayout.LayoutParams(dp(104), dp(42)));
         allTab.setOnClickListener(v -> { libraryMode = 0; showFavorites = false; updateTabs(); renderSongs(); });
         albumsTab.setOnClickListener(v -> { libraryMode = 1; showFavorites = false; updateTabs(); renderSongs(); });
         artistsTab.setOnClickListener(v -> { libraryMode = 2; showFavorites = false; updateTabs(); renderSongs(); });
