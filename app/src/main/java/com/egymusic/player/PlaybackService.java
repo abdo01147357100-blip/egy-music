@@ -15,12 +15,15 @@ import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 import java.util.ArrayList;
+import java.util.Random;
 
 public class PlaybackService extends Service {
     public static final String ACTION_PLAY = "com.egymusic.player.PLAY";
     public static final String ACTION_TOGGLE = "com.egymusic.player.TOGGLE";
     public static final String ACTION_NEXT = "com.egymusic.player.NEXT";
     public static final String ACTION_PREVIOUS = "com.egymusic.player.PREVIOUS";
+    public static final String ACTION_SHUFFLE = "com.egymusic.player.SHUFFLE";
+    public static final String ACTION_REPEAT = "com.egymusic.player.REPEAT";
     public static final String EXTRA_INDEX = "index";
     public static final String EXTRA_URIS = "uris";
     public static final String EXTRA_TITLES = "titles";
@@ -35,6 +38,9 @@ public class PlaybackService extends Service {
     private final ArrayList<String> artists = new ArrayList<>();
     private int current = -1;
     private boolean prepared = false;
+    private boolean shuffleEnabled = false;
+    private boolean repeatEnabled = false;
+    private final Random random = new Random();
 
     @Override public void onCreate() {
         super.onCreate();
@@ -43,8 +49,8 @@ public class PlaybackService extends Service {
         session.setCallback(new MediaSession.Callback() {
             @Override public void onPlay() { resumePlayback(); }
             @Override public void onPause() { pausePlayback(); }
-            @Override public void onSkipToNext() { playIndex(current + 1); }
-            @Override public void onSkipToPrevious() { playIndex(current - 1); }
+            @Override public void onSkipToNext() { playNext(); }
+            @Override public void onSkipToPrevious() { playPrevious(); }
             @Override public void onStop() { stopPlayback(); }
         });
         session.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
@@ -71,9 +77,15 @@ public class PlaybackService extends Service {
             else if (player != null && prepared && player.isPlaying()) pausePlayback();
             else resumePlayback();
         } else if (ACTION_NEXT.equals(action)) {
-            playIndex(current + 1);
+            playNext();
         } else if (ACTION_PREVIOUS.equals(action)) {
-            playIndex(current - 1);
+            playPrevious();
+        } else if (ACTION_SHUFFLE.equals(action)) {
+            shuffleEnabled = !shuffleEnabled;
+            Log.i("EGY MUSIC", "Shuffle enabled: " + shuffleEnabled);
+        } else if (ACTION_REPEAT.equals(action)) {
+            repeatEnabled = !repeatEnabled;
+            Log.i("EGY MUSIC", "Repeat enabled: " + repeatEnabled);
         }
         return START_STICKY;
     }
@@ -99,7 +111,9 @@ public class PlaybackService extends Service {
                 showNotification(true);
             });
             player.setOnCompletionListener(mp -> {
-                if (current + 1 < uris.size()) playIndex(current + 1);
+                if (repeatEnabled && current >= 0) playIndex(current);
+                else if (shuffleEnabled && uris.size() > 1) playIndex(random.nextInt(uris.size()));
+                else if (current + 1 < uris.size()) playIndex(current + 1);
                 else {
                     updateSession(PlaybackState.STATE_STOPPED);
                     showNotification(false);
@@ -120,6 +134,27 @@ public class PlaybackService extends Service {
             releasePlayer();
             stopForeground(true);
         }
+    }
+
+    private void playNext() {
+        if (uris.isEmpty()) return;
+        if (shuffleEnabled && uris.size() > 1) {
+            int next = current;
+            while (next == current) next = random.nextInt(uris.size());
+            playIndex(next);
+        } else if (current + 1 < uris.size()) playIndex(current + 1);
+        else if (repeatEnabled) playIndex(0);
+        else if (player != null && prepared) pausePlayback();
+    }
+
+    private void playPrevious() {
+        if (uris.isEmpty()) return;
+        if (shuffleEnabled && uris.size() > 1) {
+            int previous = current;
+            while (previous == current) previous = random.nextInt(uris.size());
+            playIndex(previous);
+        } else if (current > 0) playIndex(current - 1);
+        else if (repeatEnabled) playIndex(uris.size() - 1);
     }
 
     private void resumePlayback() {
