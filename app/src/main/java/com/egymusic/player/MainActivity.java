@@ -227,6 +227,11 @@ public class MainActivity extends Activity {
     }
 
     private void togglePlayback() {
+        if (current < 0) {
+            if (!songs.isEmpty()) playIndex(0);
+            else Toast.makeText(this, "اختار أغنية الأول", Toast.LENGTH_SHORT).show();
+            return;
+        }
         Intent intent = new Intent(this, PlaybackService.class);
         intent.setAction(PlaybackService.ACTION_TOGGLE);
         try {
