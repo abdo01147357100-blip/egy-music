@@ -31,6 +31,12 @@ public class PlaybackService extends Service {
     public static final String ACTION_SEEK = "com.egymusic.player.SEEK";
     public static final String ACTION_GET_PROGRESS = "com.egymusic.player.GET_PROGRESS";
     public static final String EXTRA_SEEK_POSITION = "seek_position";
+    public static final String ACTION_PROGRESS_UPDATE = "com.egymusic.player.PROGRESS_UPDATE";
+    public static final String EXTRA_DURATION = "duration_ms";
+    public static final String EXTRA_POSITION = "position_ms";
+    public static final String EXTRA_IS_PLAYING = "is_playing";
+    public static final String EXTRA_CURRENT_TITLE = "current_title";
+    public static final String EXTRA_CURRENT_ARTIST = "current_artist";
     public static final String EXTRA_TIMER_MINUTES = "timer_minutes";
     public static final String EXTRA_INDEX = "index";
     public static final String EXTRA_URIS = "uris";
@@ -102,7 +108,7 @@ public class PlaybackService extends Service {
             int position = intent.getIntExtra(EXTRA_SEEK_POSITION, 0);
             if (player != null && prepared) { try { player.seekTo(Math.max(0, Math.min(position, player.getDuration()))); updateSession(player.isPlaying() ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED); } catch (Exception e) { Log.w("EGY MUSIC", "Seek failed", e); } }
         } else if (ACTION_GET_PROGRESS.equals(action)) {
-            // The service remains the single owner of playback state.
+            broadcastProgress();
         } else if (ACTION_SLEEP_TIMER.equals(action)) {
             int minutes = intent.getIntExtra(EXTRA_TIMER_MINUTES, 0);
             if (sleepTimerRunnable != null) timerHandler.removeCallbacks(sleepTimerRunnable);
@@ -120,6 +126,17 @@ public class PlaybackService extends Service {
             }
         }
         return START_STICKY;
+    }
+
+    private void broadcastProgress() {
+        Intent update = new Intent(ACTION_PROGRESS_UPDATE);
+        update.setPackage(getPackageName());
+        update.putExtra(EXTRA_DURATION, player != null && prepared ? player.getDuration() : 0);
+        update.putExtra(EXTRA_POSITION, player != null && prepared ? player.getCurrentPosition() : 0);
+        update.putExtra(EXTRA_IS_PLAYING, player != null && prepared && player.isPlaying());
+        update.putExtra(EXTRA_CURRENT_TITLE, current >= 0 && current < titles.size() ? titles.get(current) : "");
+        update.putExtra(EXTRA_CURRENT_ARTIST, current >= 0 && current < artists.size() ? artists.get(current) : "");
+        sendBroadcast(update);
     }
 
     private void openEqualizer() {
