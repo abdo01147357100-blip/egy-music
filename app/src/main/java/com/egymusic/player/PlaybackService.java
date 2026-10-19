@@ -24,6 +24,7 @@ public class PlaybackService extends Service {
     public static final String ACTION_PREVIOUS = "com.egymusic.player.PREVIOUS";
     public static final String ACTION_SHUFFLE = "com.egymusic.player.SHUFFLE";
     public static final String ACTION_REPEAT = "com.egymusic.player.REPEAT";
+    public static final String ACTION_EQUALIZER = "com.egymusic.player.EQUALIZER";
     public static final String EXTRA_INDEX = "index";
     public static final String EXTRA_URIS = "uris";
     public static final String EXTRA_TITLES = "titles";
@@ -86,8 +87,24 @@ public class PlaybackService extends Service {
         } else if (ACTION_REPEAT.equals(action)) {
             repeatEnabled = !repeatEnabled;
             Log.i("EGY MUSIC", "Repeat enabled: " + repeatEnabled);
+        } else if (ACTION_EQUALIZER.equals(action)) {
+            openEqualizer();
         }
         return START_STICKY;
+    }
+
+    private void openEqualizer() {
+        try {
+            Intent intent = new Intent(android.media.audiofx.AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL);
+            intent.putExtra(android.media.audiofx.AudioEffect.EXTRA_PACKAGE_NAME, getPackageName());
+            intent.putExtra(android.media.audiofx.AudioEffect.EXTRA_AUDIO_SESSION, player != null ? player.getAudioSessionId() : 0);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            if (intent.resolveActivity(getPackageManager()) != null) startActivity(intent);
+            else android.widget.Toast.makeText(this, "معادل الصوت غير متاح على هذا الجهاز", android.widget.Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            Log.w("EGY MUSIC", "Equalizer panel unavailable", e);
+            android.widget.Toast.makeText(this, "تعذر فتح معادل الصوت على هذا الجهاز", android.widget.Toast.LENGTH_LONG).show();
+        }
     }
 
     private void playIndex(int index) {
