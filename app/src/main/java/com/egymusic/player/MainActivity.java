@@ -36,20 +36,21 @@ public class MainActivity extends Activity {
     private final Set<Long> favorites = new HashSet<>();
     private int current = -1;
     private LinearLayout list;
-    private TextView nowPlaying, playButton, allTab, favoritesTab, libraryCount;
+    private TextView nowPlaying, playButton, allTab, albumsTab, artistsTab, favoritesTab, libraryCount;
     private ImageView miniArtwork;
     private EditText search;
     private boolean showFavorites = false;
+    private int libraryMode = 0;
     private int accent = Color.rgb(255, 91, 116);
     private int panel = Color.rgb(28, 27, 36);
     private SharedPreferences prefs;
 
     static class Song {
         long id;
-        String title, artist;
+        String title, artist, album;
         Uri uri, artworkUri;
-        Song(long id, String title, String artist, long albumId) {
-            this.id = id; this.title = title; this.artist = artist;
+        Song(long id, String title, String artist, String album, long albumId) {
+            this.id = id; this.title = title; this.artist = artist; this.album = album;
             this.uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id);
             this.artworkUri = albumId > 0 ? Uri.parse("content://media/external/audio/albumart/" + albumId) : null;
         }
@@ -170,12 +171,18 @@ public class MainActivity extends Activity {
         tabs.setGravity(Gravity.CENTER_VERTICAL);
         tabs.setPadding(0, dp(12), 0, dp(8));
         root.addView(tabs);
-        allTab = tabButton("♫  الأغاني");
-        favoritesTab = tabButton("♥  المفضلة");
+        allTab = tabButton("♫ الأغاني");
+        albumsTab = tabButton("▦ الألبومات");
+        artistsTab = tabButton("♬ الفنانون");
+        favoritesTab = tabButton("♥ المفضلة");
         tabs.addView(allTab, new LinearLayout.LayoutParams(0, dp(42), 1));
+        tabs.addView(albumsTab, new LinearLayout.LayoutParams(0, dp(42), 1));
+        tabs.addView(artistsTab, new LinearLayout.LayoutParams(0, dp(42), 1));
         tabs.addView(favoritesTab, new LinearLayout.LayoutParams(0, dp(42), 1));
-        allTab.setOnClickListener(v -> { showFavorites = false; updateTabs(); renderSongs(); });
-        favoritesTab.setOnClickListener(v -> { showFavorites = true; updateTabs(); renderSongs(); });
+        allTab.setOnClickListener(v -> { libraryMode = 0; showFavorites = false; updateTabs(); renderSongs(); });
+        albumsTab.setOnClickListener(v -> { libraryMode = 1; showFavorites = false; updateTabs(); renderSongs(); });
+        artistsTab.setOnClickListener(v -> { libraryMode = 2; showFavorites = false; updateTabs(); renderSongs(); });
+        favoritesTab.setOnClickListener(v -> { libraryMode = 3; showFavorites = true; updateTabs(); renderSongs(); });
         updateTabs();
 
         list = new LinearLayout(this);
@@ -275,10 +282,13 @@ public class MainActivity extends Activity {
 
     private void updateTabs() {
         if (allTab == null || favoritesTab == null) return;
-        allTab.setTextColor(showFavorites ? Color.LTGRAY : accent);
-        favoritesTab.setTextColor(showFavorites ? accent : Color.LTGRAY);
-        allTab.setBackground(makePill(showFavorites ? panel : Color.rgb(67, 34, 52)));
-        favoritesTab.setBackground(makePill(showFavorites ? Color.rgb(67, 34, 52) : panel));
+        TextView[] tabs = {allTab, albumsTab, artistsTab, favoritesTab};
+        for (int i = 0; i < tabs.length; i++) {
+            boolean selected = i == libraryMode;
+            tabs[i].setTextColor(selected ? accent : Color.LTGRAY);
+            tabs[i].setBackground(makePill(selected ? Color.rgb(67, 34, 52) : panel));
+            tabs[i].setTextSize(11);
+        }
     }
 
     private GradientDrawable makePill(int color) {
@@ -300,15 +310,16 @@ public class MainActivity extends Activity {
     private void loadSongs() {
         songs.clear();
         Uri collection = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        String[] projection = {MediaStore.Audio.Media._ID, MediaStore.Audio.Media.TITLE, MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.ALBUM_ID};
+        String[] projection = {MediaStore.Audio.Media._ID, MediaStore.Audio.Media.TITLE, MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.ALBUM, MediaStore.Audio.Media.ALBUM_ID};
         String selection = MediaStore.Audio.Media.IS_MUSIC + " != 0";
         try (Cursor cursor = getContentResolver().query(collection, projection, selection, null, MediaStore.Audio.Media.TITLE + " COLLATE NOCASE ASC")) {
             if (cursor != null) while (cursor.moveToNext()) {
                 long id = cursor.getLong(0);
                 String title = cursor.getString(1);
                 String artist = cursor.getString(2);
-                long albumId = cursor.getLong(3);
-                songs.add(new Song(id, title == null ? "أغنية بدون اسم" : title, artist == null ? "فنان غير معروف" : artist, albumId));
+                String album = cursor.getString(3);
+                long albumId = cursor.getLong(4);
+                songs.add(new Song(id, title == null ? "أغنية بدون اسم" : title, artist == null ? "فنان غير معروف" : artist, album == null ? "ألبوم غير معروف" : album, albumId));
             }
         } catch (Exception e) {
             Toast.makeText(this, "حصل خطأ أثناء قراءة الأغاني", Toast.LENGTH_LONG).show();
@@ -321,12 +332,14 @@ public class MainActivity extends Activity {
         if (list == null) return;
         list.removeAllViews();
         String query = search == null ? "" : search.getText().toString().trim().toLowerCase(java.util.Locale.ROOT);
+        if (libraryMode == 1 || libraryMode == 2) { renderCollections(libraryMode == 1, query); return; }
         int count = 0;
         for (int i = 0; i < songs.size(); i++) {
             Song song = songs.get(i);
-            if (showFavorites && !favorites.contains(song.id)) continue;
+            if (libraryMode == 3 && !favorites.contains(song.id)) continue;
             if (!query.isEmpty() && !song.title.toLowerCase(java.util.Locale.ROOT).contains(query)
-                    && !song.artist.toLowerCase(java.util.Locale.ROOT).contains(query)) continue;
+                    && !song.artist.toLowerCase(java.util.Locale.ROOT).contains(query)
+                    && !song.album.toLowerCase(java.util.Locale.ROOT).contains(query)) continue;
             count++;
             final int index = i;
             LinearLayout row = new LinearLayout(this);
@@ -384,10 +397,84 @@ public class MainActivity extends Activity {
         }
         if (count == 0) {
             TextView empty = new TextView(this);
-            empty.setText(showFavorites ? "لسه مفيش أغاني في المفضلة." : "مش لاقي أغاني مطابقة للبحث.");
+            empty.setText(libraryMode == 3 ? "لسه مفيش أغاني في المفضلة." : "مش لاقي أغاني مطابقة للبحث.");
             empty.setTextColor(Color.LTGRAY);
             empty.setTextSize(15);
             empty.setPadding(dp(4), dp(22), dp(4), dp(22));
+            list.addView(empty);
+        }
+    }
+
+    private void renderCollections(boolean byAlbum, String query) {
+        java.util.LinkedHashMap<String, ArrayList<Song>> groups = new java.util.LinkedHashMap<>();
+        for (Song song : songs) {
+            String name = byAlbum ? song.album : song.artist;
+            if (!query.isEmpty() && !name.toLowerCase(java.util.Locale.ROOT).contains(query)) continue;
+            if (!groups.containsKey(name)) groups.put(name, new ArrayList<>());
+            groups.get(name).add(song);
+        }
+        for (java.util.Map.Entry<String, ArrayList<Song>> entry : groups.entrySet()) {
+            String name = entry.getKey();
+            ArrayList<Song> groupSongs = entry.getValue();
+            Song representative = groupSongs.get(0);
+            LinearLayout row = new LinearLayout(this);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setPadding(dp(10), dp(9), dp(8), dp(9));
+            row.setBackground(makePill(Color.rgb(25, 24, 32)));
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
+            params.bottomMargin = dp(8);
+            list.addView(row, params);
+            ImageView cover = new ImageView(this);
+            cover.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            if (representative.artworkUri != null) {
+                try { cover.setImageURI(representative.artworkUri); } catch (Exception ignored) {}
+            }
+            if (cover.getDrawable() == null) {
+                cover.setImageResource(byAlbum ? android.R.drawable.ic_menu_gallery : android.R.drawable.ic_menu_myplaces);
+                cover.setColorFilter(accent);
+            }
+            row.addView(cover, new LinearLayout.LayoutParams(dp(58), dp(58)));
+            LinearLayout labels = new LinearLayout(this);
+            labels.setOrientation(LinearLayout.VERTICAL);
+            labels.setPadding(dp(12), 0, dp(6), 0);
+            row.addView(labels, new LinearLayout.LayoutParams(0, -2, 1));
+            TextView title = new TextView(this);
+            title.setText(name);
+            title.setTextColor(Color.WHITE);
+            title.setTextSize(14);
+            title.setTypeface(null, 1);
+            title.setMaxLines(1);
+            labels.addView(title);
+            TextView count = new TextView(this);
+            count.setText(groupSongs.size() + (byAlbum ? " أغنية في الألبوم" : " أغنية للفنان"));
+            count.setTextColor(Color.LTGRAY);
+            count.setTextSize(12);
+            labels.addView(count);
+            TextView arrow = new TextView(this);
+            arrow.setText("›");
+            arrow.setTextColor(accent);
+            arrow.setTextSize(26);
+            row.addView(arrow);
+            row.setOnClickListener(v -> {
+                libraryMode = 0;
+                showFavorites = false;
+                updateTabs();
+                search.setText(name);
+            });
+            row.setOnLongClickListener(v -> {
+                new AlertDialog.Builder(this).setTitle(name)
+                        .setMessage("تشغيل " + groupSongs.size() + " أغنية؟")
+                        .setNegativeButton("إلغاء", null)
+                        .setPositiveButton("تشغيل", (dialog, which) -> playIndex(songs.indexOf(representative))).show();
+                return true;
+            });
+        }
+        if (groups.isEmpty()) {
+            TextView empty = new TextView(this);
+            empty.setText(byAlbum ? "الألبومات هتظهر لما يكون عندك ملفات موسيقى." : "الفنانون هيتعرضوا هنا بعد قراءة الأغاني.");
+            empty.setTextColor(Color.LTGRAY);
+            empty.setTextSize(14);
+            empty.setPadding(dp(6), dp(22), dp(6), dp(22));
             list.addView(empty);
         }
     }
