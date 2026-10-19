@@ -13,6 +13,8 @@ import android.media.session.PlaybackState;
 import android.net.Uri;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import java.util.ArrayList;
 import java.util.Random;
@@ -25,6 +27,8 @@ public class PlaybackService extends Service {
     public static final String ACTION_SHUFFLE = "com.egymusic.player.SHUFFLE";
     public static final String ACTION_REPEAT = "com.egymusic.player.REPEAT";
     public static final String ACTION_EQUALIZER = "com.egymusic.player.EQUALIZER";
+    public static final String ACTION_SLEEP_TIMER = "com.egymusic.player.SLEEP_TIMER";
+    public static final String EXTRA_TIMER_MINUTES = "timer_minutes";
     public static final String EXTRA_INDEX = "index";
     public static final String EXTRA_URIS = "uris";
     public static final String EXTRA_TITLES = "titles";
@@ -42,6 +46,8 @@ public class PlaybackService extends Service {
     private boolean shuffleEnabled = false;
     private boolean repeatEnabled = false;
     private final Random random = new Random();
+    private final Handler timerHandler = new Handler(Looper.getMainLooper());
+    private Runnable sleepTimerRunnable;
 
     @Override public void onCreate() {
         super.onCreate();
@@ -89,6 +95,21 @@ public class PlaybackService extends Service {
             Log.i("EGY MUSIC", "Repeat enabled: " + repeatEnabled);
         } else if (ACTION_EQUALIZER.equals(action)) {
             openEqualizer();
+        } else if (ACTION_SLEEP_TIMER.equals(action)) {
+            int minutes = intent.getIntExtra(EXTRA_TIMER_MINUTES, 0);
+            if (sleepTimerRunnable != null) timerHandler.removeCallbacks(sleepTimerRunnable);
+            sleepTimerRunnable = null;
+            if (minutes > 0) {
+                sleepTimerRunnable = () -> {
+                    pausePlayback();
+                    stopForeground(true);
+                    NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                    if (manager != null) manager.cancel(NOTIFICATION_ID);
+                    sleepTimerRunnable = null;
+                    stopSelf();
+                };
+                timerHandler.postDelayed(sleepTimerRunnable, minutes * 60_000L);
+            }
         }
         return START_STICKY;
     }
@@ -271,6 +292,7 @@ public class PlaybackService extends Service {
     }
 
     @Override public void onDestroy() {
+        if (sleepTimerRunnable != null) timerHandler.removeCallbacks(sleepTimerRunnable);
         releasePlayer();
         if (session != null) { session.setActive(false); session.release(); }
         super.onDestroy();
