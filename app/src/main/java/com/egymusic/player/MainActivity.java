@@ -3,6 +3,7 @@ package com.egymusic.player;
 import android.Manifest;
 import android.app.Activity;
 import android.content.ContentUris;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Color;
@@ -11,19 +12,15 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.view.Gravity;
-import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.media.MediaPlayer;
 import java.util.ArrayList;
-import java.util.Locale;
 
 public class MainActivity extends Activity {
     private static final int AUDIO_PERMISSION = 42;
     private final ArrayList<Song> songs = new ArrayList<>();
-    private MediaPlayer player;
     private int current = -1;
     private LinearLayout list;
     private TextView nowPlaying, playButton;
@@ -46,6 +43,9 @@ public class MainActivity extends Activity {
         buildUi();
         if (hasAudioPermission()) loadSongs();
         else requestPermissions(new String[]{audioPermission()}, AUDIO_PERMISSION);
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 43);
+        }
     }
 
     private String audioPermission() {
@@ -199,64 +199,54 @@ public class MainActivity extends Activity {
 
     private void playIndex(int index) {
         if (index < 0 || index >= songs.size()) return;
-        releasePlayer();
         current = index;
+        Song selected = songs.get(index);
+        nowPlaying.setText(selected.title + " — " + selected.artist);
+        playButton.setText("⏸");
+        String[] uris = new String[songs.size()];
+        String[] titles = new String[songs.size()];
+        String[] artists = new String[songs.size()];
+        for (int i = 0; i < songs.size(); i++) {
+            uris[i] = songs.get(i).uri.toString();
+            titles[i] = songs.get(i).title;
+            artists[i] = songs.get(i).artist;
+        }
+        Intent intent = new Intent(this, PlaybackService.class);
+        intent.setAction(PlaybackService.ACTION_PLAY);
+        intent.putExtra(PlaybackService.EXTRA_INDEX, index);
+        intent.putExtra(PlaybackService.EXTRA_URIS, uris);
+        intent.putExtra(PlaybackService.EXTRA_TITLES, titles);
+        intent.putExtra(PlaybackService.EXTRA_ARTISTS, artists);
         try {
-            player = new MediaPlayer();
-            player.setDataSource(this, songs.get(index).uri);
-            player.setOnPreparedListener(mp -> {
-                mp.start();
-                nowPlaying.setText(songs.get(current).title + " — " + songs.get(current).artist);
-                playButton.setText("⏸");
-            });
-            player.setOnCompletionListener(mp -> {
-                if (current + 1 < songs.size()) playIndex(current + 1);
-                else { playButton.setText("▶"); }
-            });
-            player.setOnErrorListener((mp, what, extra) -> {
-                Toast.makeText(this, "تعذر تشغيل الملف الصوتي", Toast.LENGTH_SHORT).show();
-                playButton.setText("▶");
-                releasePlayer();
-                return true;
-            });
-            player.prepareAsync();
-            nowPlaying.setText("جاري التحميل: " + songs.get(index).title);
+            if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent);
+            else startService(intent);
         } catch (Exception e) {
-            Toast.makeText(this, "مش قادر أشغل الأغنية دي", Toast.LENGTH_SHORT).show();
-            releasePlayer();
+            playButton.setText("▶");
+            Toast.makeText(this, "تعذر بدء مشغل الموسيقى", Toast.LENGTH_LONG).show();
         }
     }
 
     private void togglePlayback() {
-        if (player == null) {
-            if (!songs.isEmpty()) playIndex(current >= 0 ? current : 0);
-            return;
-        }
-        if (player.isPlaying()) {
-            player.pause();
-            playButton.setText("▶");
-        } else {
-            player.start();
-            playButton.setText("⏸");
-        }
-    }
-
-    private void releasePlayer() {
-        if (player != null) {
-            try { player.stop(); } catch (Exception ignored) {}
-            player.release();
-            player = null;
+        Intent intent = new Intent(this, PlaybackService.class);
+        intent.setAction(PlaybackService.ACTION_TOGGLE);
+        try {
+            if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent);
+            else startService(intent);
+            if (playButton.getText().toString().equals("⏸")) playButton.setText("▶");
+            else playButton.setText("⏸");
+        } catch (Exception e) {
+            Toast.makeText(this, "اختار أغنية الأول", Toast.LENGTH_SHORT).show();
         }
     }
 
     @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(requestCode, permissions, results);
         if (requestCode == AUDIO_PERMISSION && results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED) loadSongs();
-        else Toast.makeText(this, "لازم تسمح للتطبيق بقراءة ملفات الصوت", Toast.LENGTH_LONG).show();
+        else if (requestCode == AUDIO_PERMISSION) Toast.makeText(this, "لازم تسمح للتطبيق بقراءة ملفات الصوت", Toast.LENGTH_LONG).show();
     }
 
     @Override protected void onDestroy() {
-        releasePlayer();
+        // Playback is owned by PlaybackService, so it continues when this screen closes.
         super.onDestroy();
     }
     private int dp(float value) { return (int)(value * getResources().getDisplayMetrics().density + 0.5f); }
