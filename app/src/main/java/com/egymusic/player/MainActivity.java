@@ -107,9 +107,6 @@ public class MainActivity extends Activity {
         IntentFilter progressFilter = new IntentFilter(PlaybackService.ACTION_PROGRESS_UPDATE);
         if (Build.VERSION.SDK_INT >= 33) registerReceiver(progressReceiver, progressFilter, Context.RECEIVER_NOT_EXPORTED);
         else registerReceiver(progressReceiver, progressFilter);
-        IntentFilter progressFilter = new IntentFilter(PlaybackService.ACTION_PROGRESS_UPDATE);
-        if (Build.VERSION.SDK_INT >= 33) registerReceiver(progressReceiver, progressFilter, Context.RECEIVER_NOT_EXPORTED);
-        else registerReceiver(progressReceiver, progressFilter);
         buildUi();
         if (hasAudioPermission()) loadSongs();
         else requestPermissions(new String[]{audioPermission()}, AUDIO_PERMISSION);
