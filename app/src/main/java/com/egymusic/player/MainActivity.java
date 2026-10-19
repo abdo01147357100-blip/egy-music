@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -21,6 +22,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ImageView;
+import android.widget.HorizontalScrollView;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -34,10 +36,12 @@ public class MainActivity extends Activity {
     private final Set<Long> favorites = new HashSet<>();
     private int current = -1;
     private LinearLayout list;
-    private TextView nowPlaying, playButton, allTab, favoritesTab;
+    private TextView nowPlaying, playButton, allTab, favoritesTab, libraryCount;
+    private ImageView miniArtwork;
     private EditText search;
     private boolean showFavorites = false;
-    private int accent = Color.rgb(32, 214, 161);
+    private int accent = Color.rgb(255, 91, 116);
+    private int panel = Color.rgb(28, 27, 36);
     private SharedPreferences prefs;
 
     static class Song {
@@ -77,8 +81,8 @@ public class MainActivity extends Activity {
     private void buildUi() {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(18), dp(18), dp(18), dp(10));
-        root.setBackgroundColor(Color.rgb(16,17,22));
+        root.setPadding(dp(16), dp(12), dp(16), dp(8));
+        root.setBackgroundColor(Color.rgb(13, 13, 19));
         setContentView(root);
 
         TextView brand = new TextView(this);
@@ -88,13 +92,59 @@ public class MainActivity extends Activity {
         brand.setLetterSpacing(0.06f);
         brand.setGravity(Gravity.CENTER_VERTICAL);
         brand.setTypeface(null, 1);
-        root.addView(brand, new LinearLayout.LayoutParams(-1, dp(44)));
+        root.addView(brand, new LinearLayout.LayoutParams(-1, dp(48)));
 
         TextView subtitle = new TextView(this);
         subtitle.setText("موسيقاك.. على مزاجك");
         subtitle.setTextColor(Color.LTGRAY);
         subtitle.setTextSize(14);
-        root.addView(subtitle, new LinearLayout.LayoutParams(-1, dp(26)));
+            title.setTypeface(null, 1);
+        root.addView(subtitle, new LinearLayout.LayoutParams(-1, dp(24)));
+
+        LinearLayout hero = new LinearLayout(this);
+        hero.setGravity(Gravity.CENTER_VERTICAL);
+        hero.setPadding(dp(16), dp(14), dp(14), dp(14));
+        GradientDrawable heroBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                new int[]{Color.rgb(111, 63, 156), Color.rgb(195, 59, 104), Color.rgb(244, 104, 91)});
+        heroBg.setCornerRadius(dp(22));
+        hero.setBackground(heroBg);
+        LinearLayout.LayoutParams heroParams = new LinearLayout.LayoutParams(-1, dp(112));
+        heroParams.topMargin = dp(10);
+        root.addView(hero, heroParams);
+        LinearLayout heroText = new LinearLayout(this);
+        heroText.setOrientation(LinearLayout.VERTICAL);
+        hero.addView(heroText, new LinearLayout.LayoutParams(0, -2, 1));
+        TextView heroEyebrow = new TextView(this);
+        heroEyebrow.setText("صوتك، مزاجك، عالمك");
+        heroEyebrow.setTextColor(Color.rgb(255, 225, 232));
+        heroEyebrow.setTextSize(12);
+        heroText.addView(heroEyebrow);
+        TextView heroTitle = new TextView(this);
+        heroTitle.setText("خلّي الموسيقى تعيش معاك");
+        heroTitle.setTextColor(Color.WHITE);
+        heroTitle.setTextSize(18);
+        heroTitle.setTypeface(null, 1);
+        LinearLayout.LayoutParams heroTitleParams = new LinearLayout.LayoutParams(-1, -2);
+        heroTitleParams.topMargin = dp(5);
+        heroText.addView(heroTitle, heroTitleParams);
+        libraryCount = new TextView(this);
+        libraryCount.setText("مكتبتك الموسيقية في مكان واحد");
+        libraryCount.setTextColor(Color.rgb(255, 232, 236));
+        libraryCount.setTextSize(11);
+        LinearLayout.LayoutParams countParams = new LinearLayout.LayoutParams(-1, -2);
+        countParams.topMargin = dp(4);
+        heroText.addView(libraryCount, countParams);
+        TextView heroPlay = new TextView(this);
+        heroPlay.setText("▶");
+        heroPlay.setTextSize(24);
+        heroPlay.setTextColor(Color.WHITE);
+        heroPlay.setGravity(Gravity.CENTER);
+        GradientDrawable playBg = new GradientDrawable();
+        playBg.setColor(Color.argb(55, 255, 255, 255));
+        playBg.setCornerRadius(dp(28));
+        heroPlay.setBackground(playBg);
+        hero.addView(heroPlay, new LinearLayout.LayoutParams(dp(52), dp(52)));
+        heroPlay.setOnClickListener(v -> { if (!songs.isEmpty()) playIndex(0); else Toast.makeText(this, "ضيف أغاني على الموبايل الأول", Toast.LENGTH_SHORT).show(); });
 
         search = new EditText(this);
         search.setSingleLine(true);
@@ -102,10 +152,13 @@ public class MainActivity extends Activity {
         search.setHint("ابحث عن أغنية أو فنان...");
         search.setHintTextColor(Color.GRAY);
         search.setTextColor(Color.WHITE);
-        search.setPadding(dp(14), 0, dp(14), 0);
-        search.setBackgroundColor(Color.rgb(31,32,39));
+        search.setPadding(dp(16), 0, dp(16), 0);
+        GradientDrawable searchBg = new GradientDrawable();
+        searchBg.setColor(panel);
+        searchBg.setCornerRadius(dp(16));
+        search.setBackground(searchBg);
         LinearLayout.LayoutParams searchParams = new LinearLayout.LayoutParams(-1, dp(48));
-        searchParams.topMargin = dp(12);
+        searchParams.topMargin = dp(14);
         root.addView(search, searchParams);
         search.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -115,10 +168,10 @@ public class MainActivity extends Activity {
 
         LinearLayout tabs = new LinearLayout(this);
         tabs.setGravity(Gravity.CENTER_VERTICAL);
-        tabs.setPadding(0, dp(8), 0, dp(6));
+        tabs.setPadding(0, dp(12), 0, dp(8));
         root.addView(tabs);
-        allTab = tabButton("كل الأغاني");
-        favoritesTab = tabButton("♥ المفضلة");
+        allTab = tabButton("♫  الأغاني");
+        favoritesTab = tabButton("♥  المفضلة");
         tabs.addView(allTab, new LinearLayout.LayoutParams(0, dp(42), 1));
         tabs.addView(favoritesTab, new LinearLayout.LayoutParams(0, dp(42), 1));
         allTab.setOnClickListener(v -> { showFavorites = false; updateTabs(); renderSongs(); });
@@ -134,18 +187,40 @@ public class MainActivity extends Activity {
 
         LinearLayout dock = new LinearLayout(this);
         dock.setOrientation(LinearLayout.VERTICAL);
-        dock.setPadding(dp(14), dp(10), dp(14), dp(8));
-        dock.setBackgroundColor(Color.rgb(30,31,38));
+        dock.setPadding(dp(12), dp(10), dp(12), dp(6));
+        GradientDrawable dockBg = new GradientDrawable();
+        dockBg.setColor(Color.rgb(29, 27, 37));
+        dockBg.setCornerRadius(dp(20));
+        dock.setBackground(dockBg);
         LinearLayout.LayoutParams dockParams = new LinearLayout.LayoutParams(-1, -2);
         dockParams.topMargin = dp(8);
         root.addView(dock, dockParams);
 
+        LinearLayout miniRow = new LinearLayout(this);
+        miniRow.setGravity(Gravity.CENTER_VERTICAL);
+        dock.addView(miniRow, new LinearLayout.LayoutParams(-1, dp(52)));
+        miniArtwork = new ImageView(this);
+        miniArtwork.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        miniArtwork.setImageResource(android.R.drawable.ic_media_play);
+        miniArtwork.setColorFilter(accent);
+        miniArtwork.setBackground(makePill(panel));
+        miniRow.addView(miniArtwork, new LinearLayout.LayoutParams(dp(46), dp(46)));
+        LinearLayout miniLabels = new LinearLayout(this);
+        miniLabels.setOrientation(LinearLayout.VERTICAL);
+        miniLabels.setPadding(dp(10), 0, dp(8), 0);
+        miniRow.addView(miniLabels, new LinearLayout.LayoutParams(0, -2, 1));
         nowPlaying = new TextView(this);
         nowPlaying.setText("اختار أغنية للبدء");
         nowPlaying.setTextColor(Color.WHITE);
-        nowPlaying.setTextSize(14);
+        nowPlaying.setTextSize(13);
         nowPlaying.setMaxLines(1);
-        dock.addView(nowPlaying);
+        nowPlaying.setTypeface(null, 1);
+        miniLabels.addView(nowPlaying);
+        TextView miniSubtitle = new TextView(this);
+        miniSubtitle.setText("EGY MUSIC • مشغّل الموسيقى");
+        miniSubtitle.setTextColor(Color.LTGRAY);
+        miniSubtitle.setTextSize(10);
+        miniLabels.addView(miniSubtitle);
 
         LinearLayout controls = new LinearLayout(this);
         controls.setGravity(Gravity.CENTER);
@@ -192,7 +267,7 @@ public class MainActivity extends Activity {
     private TextView tabButton(String label) {
         TextView b = new TextView(this);
         b.setText(label);
-        b.setTextSize(14);
+        b.setTextSize(13);
         b.setGravity(Gravity.CENTER);
         b.setTypeface(null, 1);
         return b;
@@ -202,8 +277,15 @@ public class MainActivity extends Activity {
         if (allTab == null || favoritesTab == null) return;
         allTab.setTextColor(showFavorites ? Color.LTGRAY : accent);
         favoritesTab.setTextColor(showFavorites ? accent : Color.LTGRAY);
-        allTab.setBackgroundColor(showFavorites ? Color.rgb(24,25,31) : Color.rgb(35,48,46));
-        favoritesTab.setBackgroundColor(showFavorites ? Color.rgb(35,48,46) : Color.rgb(24,25,31));
+        allTab.setBackground(makePill(showFavorites ? panel : Color.rgb(67, 34, 52)));
+        favoritesTab.setBackground(makePill(showFavorites ? Color.rgb(67, 34, 52) : panel));
+    }
+
+    private GradientDrawable makePill(int color) {
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setColor(color);
+        drawable.setCornerRadius(dp(15));
+        return drawable;
     }
 
     private Button controlButton(String label) {
@@ -231,6 +313,7 @@ public class MainActivity extends Activity {
         } catch (Exception e) {
             Toast.makeText(this, "حصل خطأ أثناء قراءة الأغاني", Toast.LENGTH_LONG).show();
         }
+        if (libraryCount != null) libraryCount.setText(songs.size() + " أغنية في مكتبتك • جاهز تسمع؟");
         renderSongs();
     }
 
@@ -248,8 +331,8 @@ public class MainActivity extends Activity {
             final int index = i;
             LinearLayout row = new LinearLayout(this);
             row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setPadding(dp(8), dp(7), dp(4), dp(7));
-            row.setBackgroundColor(current == i ? Color.rgb(35,48,46) : Color.rgb(24,25,31));
+            row.setPadding(dp(9), dp(8), dp(6), dp(8));
+            row.setBackground(makePill(current == i ? Color.rgb(62, 34, 51) : Color.rgb(25, 24, 32)));
             LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, -2);
             rp.bottomMargin = dp(7);
             list.addView(row, rp);
@@ -265,7 +348,8 @@ public class MainActivity extends Activity {
                 icon.setPadding(dp(8), dp(8), dp(8), dp(8));
                 icon.setColorFilter(accent);
             }
-            row.addView(icon, new LinearLayout.LayoutParams(dp(48), dp(48)));
+            icon.setClipToOutline(true);
+            row.addView(icon, new LinearLayout.LayoutParams(dp(54), dp(54)));
 
             LinearLayout labels = new LinearLayout(this);
             labels.setOrientation(LinearLayout.VERTICAL);
@@ -339,7 +423,13 @@ public class MainActivity extends Activity {
         if (index < 0 || index >= songs.size()) return;
         current = index;
         Song selected = songs.get(index);
-        nowPlaying.setText(selected.title + " — " + selected.artist);
+        nowPlaying.setText(selected.title);
+        if (miniArtwork != null) {
+            miniArtwork.clearColorFilter();
+            if (selected.artworkUri != null) {
+                try { miniArtwork.setImageURI(selected.artworkUri); } catch (Exception ignored) { miniArtwork.setImageResource(android.R.drawable.ic_media_play); }
+            } else { miniArtwork.setImageResource(android.R.drawable.ic_media_play); miniArtwork.setColorFilter(accent); }
+        }
         playButton.setText("⏸");
         String[] uris = new String[songs.size()];
         String[] titles = new String[songs.size()];
