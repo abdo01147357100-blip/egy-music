@@ -19,6 +19,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -41,10 +42,11 @@ public class MainActivity extends Activity {
     static class Song {
         long id;
         String title, artist;
-        Uri uri;
-        Song(long id, String title, String artist) {
+        Uri uri, artworkUri;
+        Song(long id, String title, String artist, long albumId) {
             this.id = id; this.title = title; this.artist = artist;
             this.uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id);
+            this.artworkUri = albumId > 0 ? Uri.parse("content://media/external/audio/albumart/" + albumId) : null;
         }
     }
 
@@ -211,14 +213,15 @@ public class MainActivity extends Activity {
     private void loadSongs() {
         songs.clear();
         Uri collection = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        String[] projection = {MediaStore.Audio.Media._ID, MediaStore.Audio.Media.TITLE, MediaStore.Audio.Media.ARTIST};
+        String[] projection = {MediaStore.Audio.Media._ID, MediaStore.Audio.Media.TITLE, MediaStore.Audio.Media.ARTIST, MediaStore.Audio.Media.ALBUM_ID};
         String selection = MediaStore.Audio.Media.IS_MUSIC + " != 0";
         try (Cursor cursor = getContentResolver().query(collection, projection, selection, null, MediaStore.Audio.Media.TITLE + " COLLATE NOCASE ASC")) {
             if (cursor != null) while (cursor.moveToNext()) {
                 long id = cursor.getLong(0);
                 String title = cursor.getString(1);
                 String artist = cursor.getString(2);
-                songs.add(new Song(id, title == null ? "أغنية بدون اسم" : title, artist == null ? "فنان غير معروف" : artist));
+                long albumId = cursor.getLong(3);
+                songs.add(new Song(id, title == null ? "أغنية بدون اسم" : title, artist == null ? "فنان غير معروف" : artist, albumId));
             }
         } catch (Exception e) {
             Toast.makeText(this, "حصل خطأ أثناء قراءة الأغاني", Toast.LENGTH_LONG).show();
@@ -246,12 +249,18 @@ public class MainActivity extends Activity {
             rp.bottomMargin = dp(7);
             list.addView(row, rp);
 
-            TextView icon = new TextView(this);
-            icon.setText("♫");
-            icon.setTextSize(24);
-            icon.setTextColor(accent);
-            icon.setGravity(Gravity.CENTER);
-            row.addView(icon, new LinearLayout.LayoutParams(dp(36), dp(48)));
+            ImageView icon = new ImageView(this);
+            icon.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            icon.setBackgroundColor(Color.rgb(35,48,46));
+            if (song.artworkUri != null) {
+                try { icon.setImageURI(song.artworkUri); } catch (Exception ignored) {}
+            }
+            if (icon.getDrawable() == null) {
+                icon.setImageResource(android.R.drawable.ic_media_play);
+                icon.setPadding(dp(8), dp(8), dp(8), dp(8));
+                icon.setColorFilter(accent);
+            }
+            row.addView(icon, new LinearLayout.LayoutParams(dp(48), dp(48)));
 
             LinearLayout labels = new LinearLayout(this);
             labels.setOrientation(LinearLayout.VERTICAL);
