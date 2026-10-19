@@ -627,9 +627,9 @@ public class MainActivity extends Activity {
         content.setOrientation(LinearLayout.VERTICAL);
         content.setGravity(Gravity.CENTER_HORIZONTAL);
         content.setPadding(dp(22), dp(18), dp(22), dp(12));
-        content.setBackgroundColor(Color.rgb(18, 16, 24));
+        GradientDrawable playerBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[]{Color.rgb(5, 12, 31), Color.rgb(18, 16, 43), Color.rgb(37, 12, 48)});\n        playerBg.setCornerRadius(dp(26));\n        content.setBackground(playerBg);
         TextView heading = new TextView(this);
-        heading.setText("يتم التشغيل الآن"); heading.setTextColor(accent); heading.setTextSize(14); heading.setGravity(Gravity.CENTER);
+        heading.setText("♫  يتم التشغيل الآن  ♫"); heading.setTextColor(Color.rgb(211, 169, 255)); heading.setTextSize(15); heading.setLetterSpacing(0.04f); heading.setGravity(Gravity.CENTER);
         content.addView(heading, new LinearLayout.LayoutParams(-1, dp(32)));
         ImageView cover = new ImageView(this); cover.setScaleType(ImageView.ScaleType.CENTER_CROP); cover.setBackground(makePill(panel));
         if (current >= 0 && current < songs.size() && songs.get(current).artworkUri != null) {
@@ -638,9 +638,9 @@ public class MainActivity extends Activity {
         if (cover.getDrawable() == null) { cover.setImageResource(android.R.drawable.ic_media_play); cover.setColorFilter(accent); }
         LinearLayout.LayoutParams coverParams = new LinearLayout.LayoutParams(dp(240), dp(240));
         coverParams.topMargin = dp(10); coverParams.bottomMargin = dp(18); content.addView(cover, coverParams);
-        fullTitle = new TextView(this); fullTitle.setTextColor(Color.WHITE); fullTitle.setTextSize(21); fullTitle.setTypeface(null, 1); fullTitle.setGravity(Gravity.CENTER); fullTitle.setMaxLines(2);
+        fullTitle = new TextView(this); fullTitle.setTextColor(Color.WHITE); fullTitle.setTextSize(23); fullTitle.setTypeface(null, 1); fullTitle.setGravity(Gravity.CENTER); fullTitle.setMaxLines(2);
         content.addView(fullTitle, new LinearLayout.LayoutParams(-1, -2));
-        fullArtist = new TextView(this); fullArtist.setTextColor(Color.LTGRAY); fullArtist.setTextSize(14); fullArtist.setGravity(Gravity.CENTER);
+        fullArtist = new TextView(this); fullArtist.setTextColor(Color.rgb(190, 183, 211)); fullArtist.setTextSize(15); fullArtist.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams artistParams = new LinearLayout.LayoutParams(-1, -2); artistParams.topMargin = dp(5); content.addView(fullArtist, artistParams);
         progressBar = new SeekBar(this); progressBar.setMax(1000); progressBar.setProgressTintList(android.content.res.ColorStateList.valueOf(accent)); progressBar.setThumbTintList(android.content.res.ColorStateList.valueOf(accent));
         LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(-1, -2); seekParams.topMargin = dp(18); content.addView(progressBar, seekParams);
@@ -658,7 +658,7 @@ public class MainActivity extends Activity {
             }
         });
         LinearLayout controls = new LinearLayout(this); controls.setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams controlParams = new LinearLayout.LayoutParams(-1, dp(66)); controlParams.topMargin = dp(14); content.addView(controls, controlParams);
+        LinearLayout.LayoutParams controlParams = new LinearLayout.LayoutParams(-1, dp(72)); controlParams.topMargin = dp(18); content.addView(controls, controlParams);
         TextView previous = playerControl("⏮", 25), play = playerControl("⏯", 32), next = playerControl("⏭", 25);
         controls.addView(previous, new LinearLayout.LayoutParams(dp(64), dp(58)));
         controls.addView(play, new LinearLayout.LayoutParams(dp(80), dp(62)));
@@ -684,7 +684,7 @@ public class MainActivity extends Activity {
     }
 
     private TextView playerControl(String label, int size) {
-        TextView t = new TextView(this); t.setText(label); t.setTextSize(size); t.setTextColor(Color.WHITE); t.setGravity(Gravity.CENTER); t.setBackground(makePill(panel)); return t;
+        TextView t = new TextView(this); t.setText(label); t.setTextSize(size); t.setTextColor(Color.WHITE); t.setGravity(Gravity.CENTER);\n        GradientDrawable controlBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[]{Color.rgb(37, 43, 83), Color.rgb(75, 35, 108)}); controlBg.setCornerRadius(dp(24)); controlBg.setStroke(dp(1), Color.rgb(101, 68, 153)); t.setBackground(controlBg); return t;
     }
 
     private final Runnable playerUiUpdater = new Runnable() {
