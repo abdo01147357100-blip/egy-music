@@ -310,6 +310,59 @@ public class MainActivity extends Activity {
             @Override public void afterTextChanged(Editable e) {}
         });
 
+        LinearLayout hero = new LinearLayout(this);
+        hero.setOrientation(LinearLayout.VERTICAL);
+        hero.setPadding(dp(18), dp(15), dp(16), dp(14));
+        GradientDrawable heroBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                new int[]{Color.rgb(31, 83, 54), Color.rgb(18, 35, 27), Color.rgb(65, 44, 42)});
+        heroBg.setCornerRadius(dp(24));
+        hero.setBackground(heroBg);
+        LinearLayout.LayoutParams heroParams = new LinearLayout.LayoutParams(-1, dp(112));
+        heroParams.topMargin = dp(4);
+        heroParams.bottomMargin = dp(7);
+        root.addView(hero, heroParams);
+        TextView heroEyebrow = new TextView(this);
+        heroEyebrow.setText("YOUR SOUND • YOUR MOOD");
+        heroEyebrow.setTextColor(Color.rgb(239, 151, 145));
+        heroEyebrow.setTextSize(10);
+        heroEyebrow.setLetterSpacing(0.13f);
+        hero.addView(heroEyebrow);
+        LinearLayout heroLine = new LinearLayout(this);
+        heroLine.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams heroLineParams = new LinearLayout.LayoutParams(-1, 0, 1);
+        hero.addView(heroLine, heroLineParams);
+        LinearLayout heroCopy = new LinearLayout(this);
+        heroCopy.setOrientation(LinearLayout.VERTICAL);
+        heroLine.addView(heroCopy, new LinearLayout.LayoutParams(0, -2, 1));
+        TextView heroTitle = new TextView(this);
+        heroTitle.setText("خلي الموسيقى تعيش معاك");
+        heroTitle.setTextColor(Color.WHITE);
+        heroTitle.setTextSize(17);
+        heroTitle.setTypeface(null, 1);
+        heroCopy.addView(heroTitle);
+        TextView heroSubtitle = new TextView(this);
+        heroSubtitle.setText("مكتبتك، مزاجك، وصوتك بطريقتك");
+        heroSubtitle.setTextColor(Color.rgb(207, 216, 207));
+        heroSubtitle.setTextSize(11);
+        heroCopy.addView(heroSubtitle);
+        TextView mixButton = new TextView(this);
+        mixButton.setText("⤨");
+        mixButton.setTextSize(27);
+        mixButton.setTextColor(Color.WHITE);
+        mixButton.setGravity(Gravity.CENTER);
+        GradientDrawable mixBg = new GradientDrawable();
+        mixBg.setColor(Color.rgb(239, 151, 145));
+        mixBg.setCornerRadius(dp(19));
+        mixButton.setBackground(mixBg);
+        heroLine.addView(mixButton, new LinearLayout.LayoutParams(dp(48), dp(48)));
+        mixButton.setOnClickListener(v -> {
+            if (songs.isEmpty()) Toast.makeText(this, "مفيش أغاني للتشغيل", Toast.LENGTH_SHORT).show();
+            else {
+                startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_SHUFFLE));
+                playIndex(new java.util.Random().nextInt(songs.size()));
+            }
+        });
+
         HorizontalScrollView tabScroller = new HorizontalScrollView(this);
         tabScroller.setHorizontalScrollBarEnabled(false);
         tabScroller.setFillViewport(false);
@@ -428,6 +481,8 @@ public class MainActivity extends Activity {
         miniArtwork.setBackground(makePill(panel));
         miniRow.addView(miniArtwork, new LinearLayout.LayoutParams(dp(62), dp(62)));
         miniArtwork.setOnClickListener(v -> showFullPlayer());
+        miniArtwork.setBackground(makePill(Color.rgb(40, 62, 43)));
+        miniArtwork.setClipToOutline(true);
 
         LinearLayout bottomNav = new LinearLayout(this);
         bottomNav.setGravity(Gravity.CENTER);
@@ -562,15 +617,24 @@ public class MainActivity extends Activity {
             final int index = i;
             LinearLayout row = new LinearLayout(this);
             row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setPadding(dp(4), dp(8), dp(4), dp(8));
-            row.setBackgroundColor(Color.TRANSPARENT);
+            row.setPadding(dp(8), dp(8), dp(7), dp(8));
+            GradientDrawable songCard = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+                    index == current
+                        ? new int[]{Color.rgb(47, 68, 49), Color.rgb(30, 39, 31)}
+                        : new int[]{Color.rgb(20, 21, 22), Color.rgb(14, 15, 16)});
+            songCard.setCornerRadius(dp(18));
+            if (index == current) songCard.setStroke(dp(1), Color.rgb(239, 151, 145));
+            row.setBackground(songCard);
             LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, -2);
-            rp.bottomMargin = dp(2);
+            rp.bottomMargin = dp(6);
             list.addView(row, rp);
 
             ImageView icon = new ImageView(this);
             icon.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            icon.setBackgroundColor(Color.rgb(35,48,46));
+            GradientDrawable artworkBg = new GradientDrawable();
+            artworkBg.setColor(Color.rgb(35,48,46));
+            artworkBg.setCornerRadius(dp(13));
+            icon.setBackground(artworkBg);
             if (song.artworkUri != null) {
                 try { icon.setImageURI(song.artworkUri); } catch (Exception ignored) {}
             }
@@ -588,7 +652,7 @@ public class MainActivity extends Activity {
             row.addView(labels, new LinearLayout.LayoutParams(0, -2, 1));
             TextView title = new TextView(this);
             title.setText(song.title);
-            title.setTextColor(Color.WHITE);
+            title.setTextColor(index == current ? Color.rgb(255, 210, 202) : Color.WHITE);
             title.setTextSize(15);
             title.setMaxLines(1);
             labels.addView(title);
