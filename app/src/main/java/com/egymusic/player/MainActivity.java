@@ -52,8 +52,8 @@ public class MainActivity extends Activity {
     private EditText search;
     private boolean showFavorites = false;
     private int libraryMode = 0;
-    private int accent = Color.rgb(176, 76, 255);
-    private int panel = Color.rgb(18, 27, 49);
+    private int accent = Color.rgb(239, 151, 145);
+    private int panel = Color.rgb(30, 48, 34);
     private SharedPreferences prefs;
     private AlertDialog fullPlayerDialog;
     private SeekBar progressBar;
@@ -125,87 +125,74 @@ public class MainActivity extends Activity {
     private void buildUi() {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(16), dp(12), dp(16), dp(8));
-        GradientDrawable screenBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                new int[]{Color.rgb(5, 12, 31), Color.rgb(13, 14, 34), Color.rgb(24, 10, 35)});
-        root.setBackground(screenBg);
+        root.setPadding(dp(12), dp(8), dp(12), dp(6));
+        root.setBackgroundColor(Color.rgb(8, 8, 10));
         setContentView(root);
 
+        LinearLayout header = new LinearLayout(this);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        root.addView(header, new LinearLayout.LayoutParams(-1, dp(56)));
+
+        TextView settings = new TextView(this);
+        settings.setText("⚙");
+        settings.setTextColor(Color.rgb(235, 238, 244));
+        settings.setTextSize(25);
+        settings.setGravity(Gravity.CENTER);
+        header.addView(settings, new LinearLayout.LayoutParams(dp(42), dp(48)));
+        settings.setOnClickListener(v -> new AlertDialog.Builder(this).setTitle("إعدادات EGY MUSIC")
+            .setItems(new String[]{"معادل الصوت", "مؤقت النوم", "تحديث مكتبة الأغاني"}, (d, which) -> {
+                if (which == 0) startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_EQUALIZER));
+                else if (which == 1) showSleepTimer();
+                else loadSongs();
+            }).show());
+
+        TextView sort = new TextView(this);
+        sort.setText("☷");
+        sort.setTextColor(Color.rgb(235, 238, 244));
+        sort.setTextSize(26);
+        sort.setGravity(Gravity.CENTER);
+        header.addView(sort, new LinearLayout.LayoutParams(dp(42), dp(48)));
+        sort.setOnClickListener(v -> new AlertDialog.Builder(this).setTitle("ترتيب الأغاني")
+            .setItems(new String[]{"حسب الاسم", "حسب الفنان"}, (d, which) -> {
+                if (which == 1) java.util.Collections.sort(songs, (a, b) -> a.artist.compareToIgnoreCase(b.artist));
+                else java.util.Collections.sort(songs, (a, b) -> a.title.compareToIgnoreCase(b.title));
+                renderSongs();
+            }).show());
+
+        TextView searchToggle = new TextView(this);
+        searchToggle.setText("⌕");
+        searchToggle.setTextColor(Color.rgb(235, 238, 244));
+        searchToggle.setTextSize(31);
+        searchToggle.setGravity(Gravity.CENTER);
+        header.addView(searchToggle, new LinearLayout.LayoutParams(dp(44), dp(48)));
+
         TextView brand = new TextView(this);
-        brand.setText("♫  EGY MUSIC");
-        brand.setTextColor(Color.rgb(204, 147, 255));
-        brand.setTextSize(29);
-        brand.setLetterSpacing(0.06f);
-        brand.setGravity(Gravity.CENTER_VERTICAL);
+        brand.setText("EGY MUSIC");
+        brand.setTextColor(Color.WHITE);
+        brand.setTextSize(25);
         brand.setTypeface(null, 1);
-        root.addView(brand, new LinearLayout.LayoutParams(-1, dp(48)));
-
-        TextView subtitle = new TextView(this);
-        subtitle.setText("اسمع إحساسك • كل أغانيك في مكان واحد");
-        subtitle.setTextColor(Color.LTGRAY);
-        subtitle.setTextSize(14);
-        root.addView(subtitle, new LinearLayout.LayoutParams(-1, dp(24)));
-
-        LinearLayout hero = new LinearLayout(this);
-        hero.setGravity(Gravity.CENTER_VERTICAL);
-        hero.setPadding(dp(16), dp(14), dp(14), dp(14));
-        GradientDrawable heroBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                new int[]{Color.rgb(43, 53, 151), Color.rgb(108, 38, 183), Color.rgb(210, 42, 132)});
-        heroBg.setCornerRadius(dp(22));
-        hero.setBackground(heroBg);
-        LinearLayout.LayoutParams heroParams = new LinearLayout.LayoutParams(-1, dp(132));
-        heroParams.topMargin = dp(10);
-        root.addView(hero, heroParams);
-        LinearLayout heroText = new LinearLayout(this);
-        heroText.setOrientation(LinearLayout.VERTICAL);
-        hero.addView(heroText, new LinearLayout.LayoutParams(0, -2, 1));
-        TextView heroEyebrow = new TextView(this);
-        heroEyebrow.setText("مرحبًا بك في عالمك الموسيقي");
-        heroEyebrow.setTextColor(Color.rgb(255, 225, 232));
-        heroEyebrow.setTextSize(12);
-        heroText.addView(heroEyebrow);
-        TextView heroTitle = new TextView(this);
-        heroTitle.setText("موسيقاك. مزاجك. عالمك.");
-        heroTitle.setTextColor(Color.WHITE);
-        heroTitle.setTextSize(18);
-        heroTitle.setTypeface(null, 1);
-        LinearLayout.LayoutParams heroTitleParams = new LinearLayout.LayoutParams(-1, -2);
-        heroTitleParams.topMargin = dp(5);
-        heroText.addView(heroTitle, heroTitleParams);
-        libraryCount = new TextView(this);
-        libraryCount.setText("مكتبتك الموسيقية في مكان واحد");
-        libraryCount.setTextColor(Color.rgb(255, 232, 236));
-        libraryCount.setTextSize(11);
-        LinearLayout.LayoutParams countParams = new LinearLayout.LayoutParams(-1, -2);
-        countParams.topMargin = dp(4);
-        heroText.addView(libraryCount, countParams);
-        TextView heroPlay = new TextView(this);
-        heroPlay.setText("▶");
-        heroPlay.setTextSize(24);
-        heroPlay.setTextColor(Color.WHITE);
-        heroPlay.setGravity(Gravity.CENTER);
-        GradientDrawable playBg = new GradientDrawable();
-        playBg.setColor(Color.argb(55, 255, 255, 255));
-        playBg.setCornerRadius(dp(28));
-        heroPlay.setBackground(playBg);
-        hero.addView(heroPlay, new LinearLayout.LayoutParams(dp(52), dp(52)));
-        heroPlay.setOnClickListener(v -> { if (!songs.isEmpty()) playIndex(0); else Toast.makeText(this, "ضيف أغاني على الموبايل الأول", Toast.LENGTH_SHORT).show(); });
+        brand.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        header.addView(brand, new LinearLayout.LayoutParams(0, -1, 1));
 
         search = new EditText(this);
         search.setSingleLine(true);
-        search.setTextSize(15);
-        search.setHint("⌕  ابحث عن أغنية أو فنان أو ألبوم");
+        search.setTextSize(14);
+        search.setHint("ابحث عن أغنية أو فنان");
         search.setHintTextColor(Color.GRAY);
         search.setTextColor(Color.WHITE);
-        search.setPadding(dp(16), 0, dp(16), 0);
+        search.setPadding(dp(14), 0, dp(14), 0);
         GradientDrawable searchBg = new GradientDrawable();
-        searchBg.setColor(Color.rgb(16, 25, 46));
-        searchBg.setCornerRadius(dp(18));
-        searchBg.setStroke(dp(1), Color.rgb(53, 63, 111));
+        searchBg.setColor(Color.rgb(24, 24, 27));
+        searchBg.setCornerRadius(dp(22));
         search.setBackground(searchBg);
-        LinearLayout.LayoutParams searchParams = new LinearLayout.LayoutParams(-1, dp(48));
-        searchParams.topMargin = dp(14);
+        search.setVisibility(View.GONE);
+        LinearLayout.LayoutParams searchParams = new LinearLayout.LayoutParams(-1, dp(44));
+        searchParams.bottomMargin = dp(8);
         root.addView(search, searchParams);
+        searchToggle.setOnClickListener(v -> {
+            search.setVisibility(search.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
+            if (search.getVisibility() == View.VISIBLE) search.requestFocus();
+        });
         search.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) { renderSongs(); }
@@ -217,20 +204,20 @@ public class MainActivity extends Activity {
         tabScroller.setFillViewport(false);
         LinearLayout tabs = new LinearLayout(this);
         tabs.setGravity(Gravity.CENTER_VERTICAL);
-        tabs.setPadding(0, dp(12), 0, dp(8));
+        tabs.setPadding(0, dp(8), 0, dp(10));
         tabScroller.addView(tabs);
-        root.addView(tabScroller, new LinearLayout.LayoutParams(-1, dp(62)));
-        allTab = tabButton("♫ الأغاني");
-        albumsTab = tabButton("▦ الألبومات");
-        artistsTab = tabButton("♬ الفنانون");
-        favoritesTab = tabButton("♥ المفضلة");
-        playlistsTab = tabButton("☷ القوائم");
-        tabs.addView(allTab, new LinearLayout.LayoutParams(dp(94), dp(42)));
-        tabs.addView(albumsTab, new LinearLayout.LayoutParams(dp(104), dp(42)));
-        tabs.addView(artistsTab, new LinearLayout.LayoutParams(dp(100), dp(42)));
-        tabs.addView(favoritesTab, new LinearLayout.LayoutParams(dp(104), dp(42)));
-        tabs.addView(playlistsTab, new LinearLayout.LayoutParams(dp(104), dp(42)));
-        allTab.setOnClickListener(v -> { libraryMode = 0; showFavorites = false; updateTabs(); renderSongs(); });
+        root.addView(tabScroller, new LinearLayout.LayoutParams(-1, dp(58)));
+        allTab = tabButton("الأغاني");
+        albumsTab = tabButton("الألبومات");
+        artistsTab = tabButton("الفنانون");
+        favoritesTab = tabButton("المفضلة ♥");
+        playlistsTab = tabButton("قوائم التشغيل");
+        tabs.addView(allTab, tabLayoutParams(94));
+        tabs.addView(albumsTab, tabLayoutParams(104));
+        tabs.addView(artistsTab, tabLayoutParams(96));
+        tabs.addView(favoritesTab, tabLayoutParams(108));
+        tabs.addView(playlistsTab, tabLayoutParams(124));
+        allTab.setOnClickListener(v -> { libraryMode = 0; showFavorites = false; activePlaylist = null; updateTabs(); renderSongs(); });
         albumsTab.setOnClickListener(v -> { libraryMode = 1; showFavorites = false; updateTabs(); renderSongs(); });
         artistsTab.setOnClickListener(v -> { libraryMode = 2; showFavorites = false; updateTabs(); renderSongs(); });
         favoritesTab.setOnClickListener(v -> { libraryMode = 3; showFavorites = true; activePlaylist = null; updateTabs(); renderSongs(); });
@@ -241,30 +228,25 @@ public class MainActivity extends Activity {
         list.setOrientation(LinearLayout.VERTICAL);
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(false);
+        scroll.setClipToPadding(false);
         scroll.addView(list);
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
 
         LinearLayout dock = new LinearLayout(this);
         dock.setOrientation(LinearLayout.VERTICAL);
-        dock.setPadding(dp(12), dp(10), dp(12), dp(6));
-        GradientDrawable dockBg = new GradientDrawable();
-        dockBg.setColor(Color.rgb(14, 23, 43));
-        dockBg.setCornerRadius(dp(22));
-        dockBg.setStroke(dp(1), Color.rgb(47, 56, 102));
+        dock.setPadding(dp(10), dp(8), dp(10), dp(5));
+        GradientDrawable dockBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                new int[]{Color.rgb(26, 47, 32), Color.rgb(22, 39, 28)});
+        dockBg.setCornerRadius(dp(28));
         dock.setBackground(dockBg);
         LinearLayout.LayoutParams dockParams = new LinearLayout.LayoutParams(-1, -2);
-        dockParams.topMargin = dp(8);
+        dockParams.topMargin = dp(7);
         root.addView(dock, dockParams);
 
         LinearLayout miniRow = new LinearLayout(this);
         miniRow.setGravity(Gravity.CENTER_VERTICAL);
-        dock.addView(miniRow, new LinearLayout.LayoutParams(-1, dp(52)));
-        miniArtwork = new ImageView(this);
-        miniArtwork.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        miniArtwork.setImageResource(android.R.drawable.ic_media_play);
-        miniArtwork.setColorFilter(accent);
-        miniArtwork.setBackground(makePill(panel));
-        miniRow.addView(miniArtwork, new LinearLayout.LayoutParams(dp(46), dp(46)));
+        dock.addView(miniRow, new LinearLayout.LayoutParams(-1, dp(66)));
+
         LinearLayout miniLabels = new LinearLayout(this);
         miniLabels.setOrientation(LinearLayout.VERTICAL);
         miniLabels.setPadding(dp(10), 0, dp(8), 0);
@@ -273,62 +255,44 @@ public class MainActivity extends Activity {
         nowPlaying = new TextView(this);
         nowPlaying.setText("اختار أغنية للبدء");
         nowPlaying.setTextColor(Color.WHITE);
-        nowPlaying.setTextSize(13);
+        nowPlaying.setTextSize(15);
         nowPlaying.setMaxLines(1);
         nowPlaying.setTypeface(null, 1);
         miniLabels.addView(nowPlaying);
         TextView miniSubtitle = new TextView(this);
-        miniSubtitle.setText("EGY MUSIC • مشغّل الموسيقى");
-        miniSubtitle.setTextColor(Color.LTGRAY);
-        miniSubtitle.setTextSize(10);
+        miniSubtitle.setText("EGY MUSIC");
+        miniSubtitle.setTextColor(Color.rgb(174, 188, 177));
+        miniSubtitle.setTextSize(11);
         miniLabels.addView(miniSubtitle);
 
-        LinearLayout controls = new LinearLayout(this);
-        controls.setGravity(Gravity.CENTER);
-        dock.addView(controls);
-        Button prev = controlButton("⏮");
-        prev.setOnClickListener(v -> startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_PREVIOUS)));
-        controls.addView(prev);
-        Button play = controlButton("▶");
+        Button play = controlButton("▷");
+        play.setTextSize(24);
         playButton = play;
         play.setOnClickListener(v -> togglePlayback());
-        controls.addView(play);
-        Button next = controlButton("⏭");
-        next.setOnClickListener(v -> startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_NEXT)));
-        controls.addView(next);
-        Button shuffle = controlButton("🔀");
-        shuffle.setTextSize(16);
-        shuffle.setOnClickListener(v -> {
-            Intent intent = new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_SHUFFLE);
-            startServiceCompat(intent);
-            Toast.makeText(this, "تم تبديل وضع التشغيل العشوائي", Toast.LENGTH_SHORT).show();
-        });
-        controls.addView(shuffle);
-        Button repeat = controlButton("🔁");
-        repeat.setTextSize(16);
-        repeat.setOnClickListener(v -> {
-            Intent intent = new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_REPEAT);
-            startServiceCompat(intent);
-            Toast.makeText(this, "تم تبديل وضع التكرار", Toast.LENGTH_SHORT).show();
-        });
-        controls.addView(repeat);
-        Button timer = controlButton("⏱");
-        timer.setTextSize(16);
-        timer.setOnClickListener(v -> showSleepTimer());
-        controls.addView(timer);
-        Button equalizer = controlButton("🎚");
-        equalizer.setTextSize(16);
-        equalizer.setOnClickListener(v -> {
-            Intent intent = new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_EQUALIZER);
-            startServiceCompat(intent);
-        });
-        controls.addView(equalizer);
+        miniRow.addView(play, new LinearLayout.LayoutParams(dp(48), dp(52)));
+        Button repeat = controlButton("⟳");
+        repeat.setTextSize(23);
+        repeat.setOnClickListener(v -> startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_REPEAT)));
+        miniRow.addView(repeat, new LinearLayout.LayoutParams(dp(44), dp(52)));
+        miniArtwork = new ImageView(this);
+        miniArtwork.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        miniArtwork.setImageResource(android.R.drawable.ic_media_play);
+        miniArtwork.setColorFilter(Color.rgb(239, 151, 145));
+        miniArtwork.setBackground(makePill(panel));
+        miniRow.addView(miniArtwork, new LinearLayout.LayoutParams(dp(62), dp(62)));
+        miniArtwork.setOnClickListener(v -> showFullPlayer());
+    }
+
+    private LinearLayout.LayoutParams tabLayoutParams(int widthDp) {
+        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(dp(widthDp), dp(40));
+        p.rightMargin = dp(7);
+        return p;
     }
 
     private TextView tabButton(String label) {
         TextView b = new TextView(this);
         b.setText(label);
-        b.setTextSize(13);
+        b.setTextSize(12);
         b.setGravity(Gravity.CENTER);
         b.setTypeface(null, 1);
         return b;
@@ -339,8 +303,8 @@ public class MainActivity extends Activity {
         TextView[] tabs = {allTab, albumsTab, artistsTab, favoritesTab, playlistsTab};
         for (int i = 0; i < tabs.length; i++) {
             boolean selected = i == libraryMode || (i == 4 && libraryMode == 5);
-            tabs[i].setTextColor(selected ? accent : Color.LTGRAY);
-            tabs[i].setBackground(makePill(selected ? Color.rgb(54, 34, 101) : Color.rgb(14, 23, 42)));
+            tabs[i].setTextColor(selected ? Color.WHITE : Color.rgb(168, 168, 172));
+            tabs[i].setBackground(makePill(selected ? Color.rgb(37, 145, 245) : Color.rgb(25, 25, 27)));
             tabs[i].setTextSize(11);
         }
     }
@@ -406,10 +370,10 @@ public class MainActivity extends Activity {
             final int index = i;
             LinearLayout row = new LinearLayout(this);
             row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setPadding(dp(10), dp(10), dp(8), dp(10));
-            row.setBackground(makePill(current == i ? Color.rgb(43, 34, 83) : Color.rgb(14, 23, 42)));
+            row.setPadding(dp(4), dp(10), dp(4), dp(10));
+            row.setBackgroundColor(Color.TRANSPARENT);
             LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, -2);
-            rp.bottomMargin = dp(9);
+            rp.bottomMargin = dp(2);
             list.addView(row, rp);
 
             ImageView icon = new ImageView(this);
@@ -424,11 +388,11 @@ public class MainActivity extends Activity {
                 icon.setColorFilter(accent);
             }
             icon.setClipToOutline(true);
-            row.addView(icon, new LinearLayout.LayoutParams(dp(60), dp(60)));
+            row.addView(icon, new LinearLayout.LayoutParams(dp(70), dp(70)));
 
             LinearLayout labels = new LinearLayout(this);
             labels.setOrientation(LinearLayout.VERTICAL);
-            labels.setPadding(dp(6), 0, dp(4), 0);
+            labels.setPadding(dp(6), 0, dp(10), 0);
             row.addView(labels, new LinearLayout.LayoutParams(0, -2, 1));
             TextView title = new TextView(this);
             title.setText(song.title);
@@ -627,11 +591,11 @@ public class MainActivity extends Activity {
         content.setOrientation(LinearLayout.VERTICAL);
         content.setGravity(Gravity.CENTER_HORIZONTAL);
         content.setPadding(dp(22), dp(18), dp(22), dp(12));
-        GradientDrawable playerBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[]{Color.rgb(5, 12, 31), Color.rgb(18, 16, 43), Color.rgb(37, 12, 48)});
+        GradientDrawable playerBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[]{Color.rgb(29, 48, 34), Color.rgb(27, 45, 32), Color.rgb(24, 39, 28)});
         playerBg.setCornerRadius(dp(26));
         content.setBackground(playerBg);
         TextView heading = new TextView(this);
-        heading.setText("♫  يتم التشغيل الآن  ♫"); heading.setTextColor(Color.rgb(211, 169, 255)); heading.setTextSize(15); heading.setLetterSpacing(0.04f); heading.setGravity(Gravity.CENTER);
+        heading.setText("♫  يتم التشغيل الآن  ♫"); heading.setTextColor(Color.rgb(239, 151, 145)); heading.setTextSize(15); heading.setLetterSpacing(0.04f); heading.setGravity(Gravity.CENTER);
         content.addView(heading, new LinearLayout.LayoutParams(-1, dp(32)));
         ImageView cover = new ImageView(this); cover.setScaleType(ImageView.ScaleType.CENTER_CROP); cover.setBackground(makePill(panel));
         if (current >= 0 && current < songs.size() && songs.get(current).artworkUri != null) {
@@ -642,7 +606,7 @@ public class MainActivity extends Activity {
         coverParams.topMargin = dp(10); coverParams.bottomMargin = dp(18); content.addView(cover, coverParams);
         fullTitle = new TextView(this); fullTitle.setTextColor(Color.WHITE); fullTitle.setTextSize(23); fullTitle.setTypeface(null, 1); fullTitle.setGravity(Gravity.CENTER); fullTitle.setMaxLines(2);
         content.addView(fullTitle, new LinearLayout.LayoutParams(-1, -2));
-        fullArtist = new TextView(this); fullArtist.setTextColor(Color.rgb(190, 183, 211)); fullArtist.setTextSize(15); fullArtist.setGravity(Gravity.CENTER);
+        fullArtist = new TextView(this); fullArtist.setTextColor(Color.rgb(239, 151, 145)); fullArtist.setTextSize(15); fullArtist.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams artistParams = new LinearLayout.LayoutParams(-1, -2); artistParams.topMargin = dp(5); content.addView(fullArtist, artistParams);
         progressBar = new SeekBar(this); progressBar.setMax(1000); progressBar.setProgressTintList(android.content.res.ColorStateList.valueOf(accent)); progressBar.setThumbTintList(android.content.res.ColorStateList.valueOf(accent));
         LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(-1, -2); seekParams.topMargin = dp(18); content.addView(progressBar, seekParams);
@@ -687,7 +651,7 @@ public class MainActivity extends Activity {
 
     private TextView playerControl(String label, int size) {
         TextView t = new TextView(this); t.setText(label); t.setTextSize(size); t.setTextColor(Color.WHITE); t.setGravity(Gravity.CENTER);
-        GradientDrawable controlBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[]{Color.rgb(37, 43, 83), Color.rgb(75, 35, 108)}); controlBg.setCornerRadius(dp(24)); controlBg.setStroke(dp(1), Color.rgb(101, 68, 153)); t.setBackground(controlBg); return t;
+        GradientDrawable controlBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[]{Color.rgb(239, 151, 145), Color.rgb(231, 132, 131)}); controlBg.setCornerRadius(dp(24)); controlBg.setStroke(dp(1), Color.rgb(249, 179, 169)); t.setBackground(controlBg); return t;
     }
 
     private final Runnable playerUiUpdater = new Runnable() {
