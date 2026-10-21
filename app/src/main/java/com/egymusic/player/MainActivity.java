@@ -173,6 +173,7 @@ public class MainActivity extends Activity {
         sliders.setOrientation(LinearLayout.VERTICAL);
         panelView.addView(sliders, new LinearLayout.LayoutParams(-1, -2));
         for (short band = 0; band < bands; band++) {
+            final short bandIndex = band;
             LinearLayout bandRow = new LinearLayout(this);
             bandRow.setGravity(Gravity.CENTER_VERTICAL);
             sliders.addView(bandRow, new LinearLayout.LayoutParams(-1, dp(42)));
@@ -190,7 +191,7 @@ public class MainActivity extends Activity {
             slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) {
                     if (fromUser) {
-                        try { eq.setBandLevel(band, (short)(value + range[0])); presets.setSelection(0); }
+                        try { eq.setBandLevel(bandIndex, (short)(value + range[0])); presets.setSelection(0); }
                         catch (Exception ignored) {}
                     }
                 }
