@@ -915,7 +915,7 @@ public class MainActivity extends Activity {
         more.setOnClickListener(v -> new AlertDialog.Builder(this).setTitle("المزيد")
             .setItems(new String[]{"إضافة للمفضلة", "قائمة تشغيل", "معادل الصوت", "مؤقت النوم"}, (d, which) -> {
                 if (which == 0 && current >= 0 && current < songs.size()) { Song song = songs.get(current); if (favorites.contains(song.id)) favorites.remove(song.id); else favorites.add(song.id); saveFavorites(); renderSongs(); }
-                else if (which == 1) showPlaylistOptions(current);
+                else if (which == 1) showAddToPlaylist(songs.get(current));
                 else if (which == 2) startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_EQUALIZER));
                 else showSleepTimer();
             }).show());
