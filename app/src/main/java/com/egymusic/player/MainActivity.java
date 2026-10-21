@@ -627,7 +627,9 @@ public class MainActivity extends Activity {
         content.setOrientation(LinearLayout.VERTICAL);
         content.setGravity(Gravity.CENTER_HORIZONTAL);
         content.setPadding(dp(22), dp(18), dp(22), dp(12));
-        GradientDrawable playerBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[]{Color.rgb(5, 12, 31), Color.rgb(18, 16, 43), Color.rgb(37, 12, 48)});\n        playerBg.setCornerRadius(dp(26));\n        content.setBackground(playerBg);
+        GradientDrawable playerBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[]{Color.rgb(5, 12, 31), Color.rgb(18, 16, 43), Color.rgb(37, 12, 48)});
+        playerBg.setCornerRadius(dp(26));
+        content.setBackground(playerBg);
         TextView heading = new TextView(this);
         heading.setText("♫  يتم التشغيل الآن  ♫"); heading.setTextColor(Color.rgb(211, 169, 255)); heading.setTextSize(15); heading.setLetterSpacing(0.04f); heading.setGravity(Gravity.CENTER);
         content.addView(heading, new LinearLayout.LayoutParams(-1, dp(32)));
@@ -684,7 +686,8 @@ public class MainActivity extends Activity {
     }
 
     private TextView playerControl(String label, int size) {
-        TextView t = new TextView(this); t.setText(label); t.setTextSize(size); t.setTextColor(Color.WHITE); t.setGravity(Gravity.CENTER);\n        GradientDrawable controlBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[]{Color.rgb(37, 43, 83), Color.rgb(75, 35, 108)}); controlBg.setCornerRadius(dp(24)); controlBg.setStroke(dp(1), Color.rgb(101, 68, 153)); t.setBackground(controlBg); return t;
+        TextView t = new TextView(this); t.setText(label); t.setTextSize(size); t.setTextColor(Color.WHITE); t.setGravity(Gravity.CENTER);
+        GradientDrawable controlBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[]{Color.rgb(37, 43, 83), Color.rgb(75, 35, 108)}); controlBg.setCornerRadius(dp(24)); controlBg.setStroke(dp(1), Color.rgb(101, 68, 153)); t.setBackground(controlBg); return t;
     }
 
     private final Runnable playerUiUpdater = new Runnable() {
