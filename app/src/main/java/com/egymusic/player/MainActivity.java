@@ -296,7 +296,7 @@ public class MainActivity extends Activity {
         searchBg.setColor(Color.rgb(24, 24, 27));
         searchBg.setCornerRadius(dp(22));
         search.setBackground(searchBg);
-        search.setVisibility(View.GONE);
+        search.setVisibility(View.VISIBLE);
         LinearLayout.LayoutParams searchParams = new LinearLayout.LayoutParams(-1, dp(44));
         searchParams.bottomMargin = dp(8);
         root.addView(search, searchParams);
@@ -310,57 +310,78 @@ public class MainActivity extends Activity {
             @Override public void afterTextChanged(Editable e) {}
         });
 
+        // Redesigned home feature: a real dashboard panel with a featured action and visualizer.
         LinearLayout hero = new LinearLayout(this);
-        hero.setOrientation(LinearLayout.VERTICAL);
-        hero.setPadding(dp(18), dp(15), dp(16), dp(14));
+        hero.setOrientation(LinearLayout.HORIZONTAL);
+        hero.setGravity(Gravity.CENTER_VERTICAL);
+        hero.setPadding(dp(20), dp(18), dp(18), dp(18));
         GradientDrawable heroBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                new int[]{Color.rgb(31, 83, 54), Color.rgb(18, 35, 27), Color.rgb(65, 44, 42)});
-        heroBg.setCornerRadius(dp(24));
+                new int[]{Color.rgb(18, 76, 52), Color.rgb(12, 39, 32), Color.rgb(18, 24, 25)});
+        heroBg.setCornerRadius(dp(26));
+        heroBg.setStroke(dp(1), Color.rgb(56, 103, 75));
         hero.setBackground(heroBg);
-        LinearLayout.LayoutParams heroParams = new LinearLayout.LayoutParams(-1, dp(112));
-        heroParams.topMargin = dp(4);
-        heroParams.bottomMargin = dp(7);
+        LinearLayout.LayoutParams heroParams = new LinearLayout.LayoutParams(-1, dp(154));
+        heroParams.topMargin = dp(6);
+        heroParams.bottomMargin = dp(10);
         root.addView(hero, heroParams);
-        TextView heroEyebrow = new TextView(this);
-        heroEyebrow.setText("YOUR SOUND • YOUR MOOD");
-        heroEyebrow.setTextColor(Color.rgb(239, 151, 145));
-        heroEyebrow.setTextSize(10);
-        heroEyebrow.setLetterSpacing(0.13f);
-        hero.addView(heroEyebrow);
-        LinearLayout heroLine = new LinearLayout(this);
-        heroLine.setGravity(Gravity.CENTER_VERTICAL);
-        LinearLayout.LayoutParams heroLineParams = new LinearLayout.LayoutParams(-1, 0, 1);
-        hero.addView(heroLine, heroLineParams);
+
         LinearLayout heroCopy = new LinearLayout(this);
         heroCopy.setOrientation(LinearLayout.VERTICAL);
-        heroLine.addView(heroCopy, new LinearLayout.LayoutParams(0, -2, 1));
+        hero.addView(heroCopy, new LinearLayout.LayoutParams(0, -1, 1));
+        TextView heroEyebrow = new TextView(this);
+        heroEyebrow.setText("EGY MUSIC  /  YOUR LIBRARY");
+        heroEyebrow.setTextColor(Color.rgb(151, 220, 174));
+        heroEyebrow.setTextSize(10);
+        heroEyebrow.setLetterSpacing(0.12f);
+        heroCopy.addView(heroEyebrow);
         TextView heroTitle = new TextView(this);
-        heroTitle.setText("خلي الموسيقى تعيش معاك");
+        heroTitle.setText("اسمعها\nعلى مزاجك");
         heroTitle.setTextColor(Color.WHITE);
-        heroTitle.setTextSize(17);
+        heroTitle.setTextSize(25);
+        heroTitle.setLineSpacing(0, 0.94f);
         heroTitle.setTypeface(null, 1);
-        heroCopy.addView(heroTitle);
+        LinearLayout.LayoutParams heroTitleParams = new LinearLayout.LayoutParams(-1, 0, 1);
+        heroTitleParams.topMargin = dp(8);
+        heroCopy.addView(heroTitle, heroTitleParams);
         TextView heroSubtitle = new TextView(this);
-        heroSubtitle.setText("مكتبتك، مزاجك، وصوتك بطريقتك");
-        heroSubtitle.setTextColor(Color.rgb(207, 216, 207));
-        heroSubtitle.setTextSize(11);
+        heroSubtitle.setText("كل أغانيك في مكان واحد");
+        heroSubtitle.setTextColor(Color.rgb(192, 211, 198));
+        heroSubtitle.setTextSize(12);
         heroCopy.addView(heroSubtitle);
-        TextView mixButton = new TextView(this);
-        mixButton.setText("⤨");
-        mixButton.setTextSize(27);
-        mixButton.setTextColor(Color.WHITE);
-        mixButton.setGravity(Gravity.CENTER);
-        GradientDrawable mixBg = new GradientDrawable();
-        mixBg.setColor(Color.rgb(239, 151, 145));
-        mixBg.setCornerRadius(dp(19));
-        mixButton.setBackground(mixBg);
-        heroLine.addView(mixButton, new LinearLayout.LayoutParams(dp(48), dp(48)));
-        mixButton.setOnClickListener(v -> {
+
+        LinearLayout heroVisual = new LinearLayout(this);
+        heroVisual.setOrientation(LinearLayout.VERTICAL);
+        heroVisual.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams visualParams = new LinearLayout.LayoutParams(dp(104), -1);
+        visualParams.leftMargin = dp(8);
+        hero.addView(heroVisual, visualParams);
+        FrameLayout disc = new FrameLayout(this);
+        GradientDrawable discBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                new int[]{Color.rgb(92, 205, 133), Color.rgb(24, 115, 75)});
+        discBg.setShape(GradientDrawable.OVAL);
+        disc.setBackground(discBg);
+        heroVisual.addView(disc, new LinearLayout.LayoutParams(dp(76), dp(76)));
+        TextView discIcon = new TextView(this);
+        discIcon.setText("▶");
+        discIcon.setTextColor(Color.rgb(9, 34, 23));
+        discIcon.setTextSize(26);
+        discIcon.setGravity(Gravity.CENTER);
+        disc.addView(discIcon, new FrameLayout.LayoutParams(-1, -1));
+        TextView visualizer = new TextView(this);
+        visualizer.setText("▂ ▅ ▇ ▄ ▆ ▃");
+        visualizer.setTextColor(Color.rgb(127, 221, 158));
+        visualizer.setTextSize(17);
+        visualizer.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams visualizerParams = new LinearLayout.LayoutParams(-1, dp(28));
+        visualizerParams.topMargin = dp(8);
+        heroVisual.addView(visualizer, visualizerParams);
+        disc.setOnClickListener(v -> {
             if (songs.isEmpty()) Toast.makeText(this, "مفيش أغاني للتشغيل", Toast.LENGTH_SHORT).show();
-            else {
-                startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_SHUFFLE));
-                playIndex(new java.util.Random().nextInt(songs.size()));
-            }
+            else playIndex(current >= 0 ? current : 0);
+        });
+        visualizer.setOnClickListener(v -> {
+            if (songs.isEmpty()) Toast.makeText(this, "مفيش أغاني للتشغيل", Toast.LENGTH_SHORT).show();
+            else playIndex(new java.util.Random().nextInt(songs.size()));
         });
 
         HorizontalScrollView tabScroller = new HorizontalScrollView(this);
@@ -551,7 +572,7 @@ public class MainActivity extends Activity {
         for (int i = 0; i < tabs.length; i++) {
             boolean selected = i == libraryMode || (i == 4 && libraryMode == 5);
             tabs[i].setTextColor(selected ? Color.WHITE : Color.rgb(168, 168, 172));
-            tabs[i].setBackground(makePill(selected ? Color.rgb(37, 145, 245) : Color.rgb(25, 25, 27)));
+            tabs[i].setBackground(makePill(selected ? Color.rgb(31, 117, 75) : Color.rgb(25, 27, 27)));
             tabs[i].setTextSize(11);
         }
     }
@@ -621,9 +642,9 @@ public class MainActivity extends Activity {
             GradientDrawable songCard = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
                     index == current
                         ? new int[]{Color.rgb(47, 68, 49), Color.rgb(30, 39, 31)}
-                        : new int[]{Color.rgb(20, 21, 22), Color.rgb(14, 15, 16)});
+                        : new int[]{Color.rgb(27, 30, 29), Color.rgb(17, 19, 19)});
             songCard.setCornerRadius(dp(18));
-            if (index == current) songCard.setStroke(dp(1), Color.rgb(239, 151, 145));
+            if (index == current) songCard.setStroke(dp(2), Color.rgb(100, 213, 143));
             row.setBackground(songCard);
             LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, -2);
             rp.bottomMargin = dp(6);
@@ -652,7 +673,7 @@ public class MainActivity extends Activity {
             row.addView(labels, new LinearLayout.LayoutParams(0, -2, 1));
             TextView title = new TextView(this);
             title.setText(song.title);
-            title.setTextColor(index == current ? Color.rgb(255, 210, 202) : Color.WHITE);
+            title.setTextColor(index == current ? Color.rgb(147, 232, 175) : Color.WHITE);
             title.setTextSize(15);
             title.setMaxLines(1);
             labels.addView(title);
