@@ -74,8 +74,21 @@ public class PlaybackService extends Service {
     }
 
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent == null) return START_STICKY;
+        if (intent == null) return START_NOT_STICKY;
         String action = intent.getAction();
+        // Promote immediately: Android 8+ can kill a service that was started as a
+        // foreground service if it does not call startForeground promptly.
+        if (ACTION_PLAY.equals(action) || ACTION_TOGGLE.equals(action)
+                || ACTION_NEXT.equals(action) || ACTION_PREVIOUS.equals(action)) {
+            try {
+                startForeground(NOTIFICATION_ID, buildNotification(false));
+            } catch (RuntimeException e) {
+                Log.e("EGY MUSIC", "Could not start foreground playback service", e);
+                android.widget.Toast.makeText(this, "تعذر بدء تشغيل الموسيقى. تأكد من السماح بالإشعارات.", android.widget.Toast.LENGTH_LONG).show();
+                stopSelf(startId);
+                return START_NOT_STICKY;
+            }
+        }
         if (ACTION_PLAY.equals(action)) {
             String[] newUris = intent.getStringArrayExtra(EXTRA_URIS);
             String[] newTitles = intent.getStringArrayExtra(EXTRA_TITLES);
@@ -185,6 +198,9 @@ public class PlaybackService extends Service {
             player.setOnErrorListener((mp, what, extra) -> {
                 Log.e("EGY MUSIC", "MediaPlayer error: " + what + "/" + extra);
                 prepared = false;
+                android.widget.Toast.makeText(getApplicationContext(),
+                        "تعذر تشغيل الملف الصوتي. جرّب أغنية أخرى أو تحقق من صلاحية ملفات الصوت.",
+                        android.widget.Toast.LENGTH_LONG).show();
                 updateSession(PlaybackState.STATE_ERROR);
                 showNotification(false);
                 return true;
