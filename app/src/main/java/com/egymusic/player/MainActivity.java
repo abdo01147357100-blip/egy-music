@@ -1,6 +1,8 @@
 package com.egymusic.player;
 
 import android.Manifest;
+import android.animation.ArgbEvaluator;
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ContentUris;
@@ -57,6 +59,8 @@ public class MainActivity extends Activity {
     private int panel = Color.rgb(30, 48, 34);
     private SharedPreferences prefs;
     private AlertDialog fullPlayerDialog;
+    private ValueAnimator playerBackgroundAnimator;
+    private ValueAnimator coverPulseAnimator;
     private SeekBar progressBar;
     private TextView fullTitle, fullArtist, elapsedText, durationText;
     private int durationMillis = 0;
@@ -779,9 +783,24 @@ public class MainActivity extends Activity {
         content.setOrientation(LinearLayout.VERTICAL);
         content.setGravity(Gravity.CENTER_HORIZONTAL);
         content.setPadding(dp(22), dp(18), dp(22), dp(12));
-        GradientDrawable playerBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[]{Color.rgb(29, 48, 34), Color.rgb(27, 45, 32), Color.rgb(24, 39, 28)});
+        GradientDrawable playerBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                new int[]{Color.rgb(12, 27, 20), Color.rgb(29, 65, 43), Color.rgb(45, 39, 35)});
         playerBg.setCornerRadius(dp(26));
         content.setBackground(playerBg);
+        // Subtle animated emerald/coral glow gives the player a living, dynamic feel.
+        playerBackgroundAnimator = ValueAnimator.ofFloat(0f, 1f);
+        playerBackgroundAnimator.setDuration(5200);
+        playerBackgroundAnimator.setRepeatMode(ValueAnimator.REVERSE);
+        playerBackgroundAnimator.setRepeatCount(ValueAnimator.INFINITE);
+        playerBackgroundAnimator.addUpdateListener(a -> {
+            float t = (float)a.getAnimatedValue();
+            int c1 = (Integer)new ArgbEvaluator().evaluate(t, Color.rgb(12, 27, 20), Color.rgb(35, 24, 30));
+            int c2 = (Integer)new ArgbEvaluator().evaluate(t, Color.rgb(29, 65, 43), Color.rgb(47, 53, 34));
+            int c3 = (Integer)new ArgbEvaluator().evaluate(t, Color.rgb(45, 39, 35), Color.rgb(15, 46, 38));
+            playerBg.setColors(new int[]{c1, c2, c3});
+            content.invalidate();
+        });
+        playerBackgroundAnimator.start();
         TextView heading = new TextView(this);
         heading.setText("♫  يتم التشغيل الآن  ♫"); heading.setTextColor(Color.rgb(239, 151, 145)); heading.setTextSize(15); heading.setLetterSpacing(0.04f); heading.setGravity(Gravity.CENTER);
         content.addView(heading, new LinearLayout.LayoutParams(-1, dp(32)));
@@ -790,8 +809,23 @@ public class MainActivity extends Activity {
             try { cover.setImageURI(songs.get(current).artworkUri); } catch (Exception ignored) {}
         }
         if (cover.getDrawable() == null) { cover.setImageResource(android.R.drawable.ic_media_play); cover.setColorFilter(accent); }
-        LinearLayout.LayoutParams coverParams = new LinearLayout.LayoutParams(dp(240), dp(240));
-        coverParams.topMargin = dp(10); coverParams.bottomMargin = dp(18); content.addView(cover, coverParams);
+        GradientDrawable coverFrame = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                new int[]{Color.rgb(239, 151, 145), Color.rgb(79, 190, 125), Color.rgb(239, 151, 145)});
+        coverFrame.setCornerRadius(dp(22));
+        cover.setBackground(coverFrame);
+        cover.setClipToOutline(true);
+        LinearLayout.LayoutParams coverParams = new LinearLayout.LayoutParams(dp(250), dp(250));
+        coverParams.topMargin = dp(12); coverParams.bottomMargin = dp(18); content.addView(cover, coverParams);
+        coverPulseAnimator = ValueAnimator.ofFloat(0.985f, 1.015f);
+        coverPulseAnimator.setDuration(1800);
+        coverPulseAnimator.setRepeatMode(ValueAnimator.REVERSE);
+        coverPulseAnimator.setRepeatCount(ValueAnimator.INFINITE);
+        coverPulseAnimator.addUpdateListener(a -> {
+            float scale = (float)a.getAnimatedValue();
+            cover.setScaleX(scale);
+            cover.setScaleY(scale);
+        });
+        coverPulseAnimator.start();
         fullTitle = new TextView(this); fullTitle.setTextColor(Color.WHITE); fullTitle.setTextSize(23); fullTitle.setTypeface(null, 1); fullTitle.setGravity(Gravity.CENTER); fullTitle.setMaxLines(2);
         content.addView(fullTitle, new LinearLayout.LayoutParams(-1, -2));
         fullArtist = new TextView(this); fullArtist.setTextColor(Color.rgb(239, 151, 145)); fullArtist.setTextSize(15); fullArtist.setGravity(Gravity.CENTER);
@@ -831,7 +865,12 @@ public class MainActivity extends Activity {
         if (current >= 0 && current < songs.size()) { fullTitle.setText(songs.get(current).title); fullArtist.setText(songs.get(current).artist); }
         AlertDialog dialog = new AlertDialog.Builder(this).setView(content).setNegativeButton("إغلاق", null).create();
         fullPlayerDialog = dialog;
-        dialog.setOnDismissListener(d -> { fullPlayerDialog = null; progressBar = null; fullTitle = null; fullArtist = null; elapsedText = null; durationText = null; playerUiHandler.removeCallbacks(playerUiUpdater); });
+        dialog.setOnDismissListener(d -> {
+            fullPlayerDialog = null; progressBar = null; fullTitle = null; fullArtist = null; elapsedText = null; durationText = null;
+            playerUiHandler.removeCallbacks(playerUiUpdater);
+            if (playerBackgroundAnimator != null) { playerBackgroundAnimator.cancel(); playerBackgroundAnimator = null; }
+            if (coverPulseAnimator != null) { coverPulseAnimator.cancel(); coverPulseAnimator = null; }
+        });
         dialog.show();
         if (dialog.getWindow() != null) { dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent); dialog.getWindow().setLayout(-1, -1); }
         playerUiHandler.removeCallbacks(playerUiUpdater); playerUiHandler.post(playerUiUpdater);
