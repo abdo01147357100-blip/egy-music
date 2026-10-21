@@ -14,6 +14,7 @@ import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
+import android.media.audiofx.Equalizer;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -113,6 +114,111 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 43);
         }
+        if ("com.egymusic.player.OPEN_EQUALIZER".equals(getIntent().getAction())) {
+            showBuiltInEqualizer(getIntent().getIntExtra("audio_session_id", 0));
+        }
+    }
+
+    @Override public void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if ("com.egymusic.player.OPEN_EQUALIZER".equals(intent.getAction())) {
+            showBuiltInEqualizer(intent.getIntExtra("audio_session_id", 0));
+        }
+    }
+
+    private void showBuiltInEqualizer(int sessionId) {
+        LinearLayout panelView = new LinearLayout(this);
+        panelView.setOrientation(LinearLayout.VERTICAL);
+        panelView.setPadding(dp(20), dp(16), dp(20), dp(8));
+        GradientDrawable bg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                new int[]{Color.rgb(24, 45, 31), Color.rgb(10, 12, 12)});
+        bg.setCornerRadius(dp(24));
+        panelView.setBackground(bg);
+        TextView caption = new TextView(this);
+        caption.setText("اضبط صوتك بالطريقة اللي تحبها");
+        caption.setTextColor(Color.rgb(239, 151, 145));
+        caption.setTextSize(13);
+        caption.setGravity(Gravity.CENTER);
+        panelView.addView(caption, new LinearLayout.LayoutParams(-1, dp(34)));
+        final Equalizer eq;
+        try {
+            if (sessionId <= 0) throw new IllegalStateException("No active audio session");
+            eq = new Equalizer(0, sessionId);
+            eq.setEnabled(true);
+        } catch (Exception e) {
+            new AlertDialog.Builder(this).setTitle("معادل الصوت")
+                .setMessage("ابدأ تشغيل أغنية أولًا، وبعدها افتح معادل الصوت مرة تانية. لو المشكلة مستمرة، ممكن يكون مؤثر الصوت مقفول من النظام.")
+                .setPositiveButton("حسنًا", null).show();
+            return;
+        }
+        short bands = eq.getNumberOfBands();
+        short[] range = eq.getBandLevelRange();
+        TextView presetLabel = new TextView(this);
+        presetLabel.setText("الإعدادات الجاهزة");
+        presetLabel.setTextColor(Color.WHITE);
+        presetLabel.setTextSize(14);
+        presetLabel.setPadding(0, dp(8), 0, dp(4));
+        panelView.addView(presetLabel);
+        android.widget.Spinner presets = new android.widget.Spinner(this);
+        java.util.ArrayList<String> presetNames = new java.util.ArrayList<>();
+        presetNames.add("مخصص");
+        short presetCount = eq.getNumberOfPresets();
+        for (short p = 0; p < presetCount; p++) presetNames.add(eq.getPresetName(p));
+        android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(this, android.R.layout.simple_spinner_item, presetNames);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        presets.setAdapter(adapter);
+        panelView.addView(presets, new LinearLayout.LayoutParams(-1, dp(44)));
+        LinearLayout sliders = new LinearLayout(this);
+        sliders.setOrientation(LinearLayout.VERTICAL);
+        panelView.addView(sliders, new LinearLayout.LayoutParams(-1, -2));
+        for (short band = 0; band < bands; band++) {
+            LinearLayout bandRow = new LinearLayout(this);
+            bandRow.setGravity(Gravity.CENTER_VERTICAL);
+            sliders.addView(bandRow, new LinearLayout.LayoutParams(-1, dp(42)));
+            TextView name = new TextView(this);
+            name.setText(String.format(java.util.Locale.US, "%.1f kHz", eq.getCenterFreq(band) / 1000000f));
+            name.setTextColor(Color.WHITE);
+            name.setTextSize(11);
+            bandRow.addView(name, new LinearLayout.LayoutParams(dp(60), -2));
+            SeekBar slider = new SeekBar(this);
+            slider.setMax(range[1] - range[0]);
+            slider.setProgress(eq.getBandLevel(band) - range[0]);
+            slider.setProgressTintList(android.content.res.ColorStateList.valueOf(Color.rgb(239, 151, 145)));
+            slider.setThumbTintList(android.content.res.ColorStateList.valueOf(Color.rgb(239, 151, 145)));
+            bandRow.addView(slider, new LinearLayout.LayoutParams(0, dp(36), 1));
+            slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) {
+                    if (fromUser) {
+                        try { eq.setBandLevel(band, (short)(value + range[0])); presets.setSelection(0); }
+                        catch (Exception ignored) {}
+                    }
+                }
+                @Override public void onStartTrackingTouch(SeekBar bar) {}
+                @Override public void onStopTrackingTouch(SeekBar bar) {}
+            });
+        }
+        presets.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                if (position > 0) {
+                    try {
+                        eq.usePreset((short)(position - 1));
+                        for (int b = 0; b < sliders.getChildCount(); b++) {
+                            LinearLayout row = (LinearLayout)sliders.getChildAt(b);
+                            SeekBar slider = (SeekBar)row.getChildAt(1);
+                            slider.setProgress(eq.getBandLevel((short)b) - range[0]);
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+        });
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("معادل الصوت • EGY MUSIC")
+            .setView(panelView).setPositiveButton("تم", (d, w) -> {}).setNegativeButton("إيقاف التأثير", (d, w) -> {
+                try { eq.setEnabled(false); eq.release(); } catch (Exception ignored) {}
+            }).create();
+        dialog.setOnDismissListener(d -> { try { eq.release(); } catch (Exception ignored) {} });
+        dialog.show();
     }
 
     private String audioPermission() {
