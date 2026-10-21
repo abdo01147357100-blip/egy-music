@@ -881,62 +881,110 @@ public class MainActivity extends Activity {
     }
 
     private void showFullPlayer() {
-        LinearLayout content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        content.setGravity(Gravity.CENTER_HORIZONTAL);
-        content.setPadding(dp(22), dp(18), dp(22), dp(12));
-        GradientDrawable playerBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                new int[]{Color.rgb(18, 13, 39), Color.rgb(41, 30, 88), Color.rgb(12, 16, 32)});
-        playerBg.setCornerRadius(dp(26));
-        content.setBackground(playerBg);
-        // Subtle animated emerald/coral glow gives the player a living, dynamic feel.
-        playerBackgroundAnimator = ValueAnimator.ofFloat(0f, 1f);
-        playerBackgroundAnimator.setDuration(5200);
-        playerBackgroundAnimator.setRepeatMode(ValueAnimator.REVERSE);
-        playerBackgroundAnimator.setRepeatCount(ValueAnimator.INFINITE);
-        playerBackgroundAnimator.addUpdateListener(a -> {
-            float t = (float)a.getAnimatedValue();
-            int c1 = (Integer)new ArgbEvaluator().evaluate(t, Color.rgb(18, 13, 39), Color.rgb(38, 20, 67));
-            int c2 = (Integer)new ArgbEvaluator().evaluate(t, Color.rgb(41, 30, 88), Color.rgb(48, 35, 104));
-            int c3 = (Integer)new ArgbEvaluator().evaluate(t, Color.rgb(12, 16, 32), Color.rgb(22, 29, 58));
-            playerBg.setColors(new int[]{c1, c2, c3});
-            content.invalidate();
-        });
-        playerBackgroundAnimator.start();
-        TextView heading = new TextView(this);
-        heading.setText("EGY MUSIC  •  NOW PLAYING"); heading.setTextColor(Color.rgb(205, 187, 255)); heading.setTextSize(15); heading.setLetterSpacing(0.04f); heading.setGravity(Gravity.CENTER);
-        content.addView(heading, new LinearLayout.LayoutParams(-1, dp(32)));
-        ImageView cover = new ImageView(this); cover.setScaleType(ImageView.ScaleType.CENTER_CROP); cover.setBackground(makePill(panel));
-        if (current >= 0 && current < songs.size() && songs.get(current).artworkUri != null) {
-            try { cover.setImageURI(songs.get(current).artworkUri); } catch (Exception ignored) {}
+        if (current < 0 || current >= songs.size()) {
+            if (songs.isEmpty()) { Toast.makeText(this, "مفيش أغاني متاحة للتشغيل", Toast.LENGTH_SHORT).show(); return; }
+            current = 0;
         }
-        if (cover.getDrawable() == null) { cover.setImageResource(android.R.drawable.ic_media_play); cover.setColorFilter(accent); }
-        GradientDrawable coverFrame = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                new int[]{Color.rgb(167, 139, 250), Color.rgb(101, 74, 203), Color.rgb(167, 139, 250)});
-        coverFrame.setCornerRadius(dp(22));
-        cover.setBackground(coverFrame);
-        cover.setClipToOutline(true);
-        LinearLayout.LayoutParams coverParams = new LinearLayout.LayoutParams(dp(250), dp(250));
-        coverParams.topMargin = dp(12); coverParams.bottomMargin = dp(18); content.addView(cover, coverParams);
-        coverPulseAnimator = ValueAnimator.ofFloat(0.985f, 1.015f);
-        coverPulseAnimator.setDuration(1800);
-        coverPulseAnimator.setRepeatMode(ValueAnimator.REVERSE);
-        coverPulseAnimator.setRepeatCount(ValueAnimator.INFINITE);
-        coverPulseAnimator.addUpdateListener(a -> {
-            float scale = (float)a.getAnimatedValue();
-            cover.setScaleX(scale);
-            cover.setScaleY(scale);
+        if (playerBackgroundAnimator != null) { playerBackgroundAnimator.cancel(); playerBackgroundAnimator = null; }
+        if (coverPulseAnimator != null) { coverPulseAnimator.cancel(); coverPulseAnimator = null; }
+
+        LinearLayout shell = new LinearLayout(this);
+        shell.setOrientation(LinearLayout.VERTICAL);
+        shell.setPadding(dp(18), dp(12), dp(18), dp(12));
+        GradientDrawable shellBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+            new int[]{Color.rgb(12, 12, 27), Color.rgb(23, 20, 49), Color.rgb(8, 10, 22)});
+        shellBg.setCornerRadius(dp(28));
+        shellBg.setStroke(dp(1), Color.rgb(65, 58, 111));
+        shell.setBackground(shellBg);
+        shell.setElevation(dp(18));
+
+        LinearLayout top = new LinearLayout(this);
+        top.setGravity(Gravity.CENTER_VERTICAL);
+        shell.addView(top, new LinearLayout.LayoutParams(-1, dp(44)));
+        TextView close = new TextView(this);
+        close.setText("⌄"); close.setTextColor(Color.WHITE); close.setTextSize(28); close.setGravity(Gravity.CENTER);
+        top.addView(close, new LinearLayout.LayoutParams(dp(44), dp(44)));
+        TextView now = new TextView(this);
+        now.setText("يتم التشغيل الآن"); now.setTextColor(Color.rgb(211, 201, 255)); now.setTextSize(12);
+        now.setGravity(Gravity.CENTER); now.setLetterSpacing(0.12f);
+        top.addView(now, new LinearLayout.LayoutParams(0, -1, 1));
+        TextView more = new TextView(this);
+        more.setText("⋮"); more.setTextColor(Color.WHITE); more.setTextSize(25); more.setGravity(Gravity.CENTER);
+        top.addView(more, new LinearLayout.LayoutParams(dp(44), dp(44)));
+        close.setOnClickListener(v -> { if (fullPlayerDialog != null) fullPlayerDialog.dismiss(); });
+        more.setOnClickListener(v -> new AlertDialog.Builder(this).setTitle("المزيد")
+            .setItems(new String[]{"إضافة للمفضلة", "قائمة تشغيل", "معادل الصوت", "مؤقت النوم"}, (d, which) -> {
+                if (which == 0 && current >= 0 && current < songs.size()) { Song song = songs.get(current); if (favorites.contains(song.id)) favorites.remove(song.id); else favorites.add(song.id); saveFavorites(); renderSongs(); }
+                else if (which == 1) showPlaylistOptions(current);
+                else if (which == 2) startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_EQUALIZER));
+                else showSleepTimer();
+            }).show());
+
+        FrameLayout artworkFrame = new FrameLayout(this);
+        GradientDrawable artFrameBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+            new int[]{Color.rgb(164, 111, 255), Color.rgb(77, 95, 255), Color.rgb(218, 91, 255)});
+        artFrameBg.setCornerRadius(dp(24));
+        LinearLayout.LayoutParams artFrameParams = new LinearLayout.LayoutParams(-1, 0, 1.0f);
+        artFrameParams.topMargin = dp(14); artFrameParams.bottomMargin = dp(14);
+        shell.addView(artworkFrame, artFrameParams);
+        ImageView art = new ImageView(this);
+        art.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        art.setBackground(makePill(Color.rgb(24, 23, 46)));
+        art.setClipToOutline(true);
+        FrameLayout.LayoutParams artParams = new FrameLayout.LayoutParams(-1, -1);
+        artParams.setMargins(dp(3), dp(3), dp(3), dp(3));
+        artworkFrame.addView(art, artParams);
+        Song selected = songs.get(current);
+        if (selected.artworkUri != null) {
+            try { art.setImageURI(selected.artworkUri); } catch (Exception ignored) {}
+        }
+        if (art.getDrawable() == null) {
+            GradientDrawable fallback = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                new int[]{Color.rgb(66, 45, 123), Color.rgb(24, 35, 83)});
+            art.setImageDrawable(fallback);
+            TextView symbol = new TextView(this);
+            symbol.setText("♫"); symbol.setTextSize(100); symbol.setTextColor(Color.rgb(213, 192, 255)); symbol.setGravity(Gravity.CENTER);
+            artworkFrame.addView(symbol, new FrameLayout.LayoutParams(-1, -1));
+        }
+        art.setElevation(dp(8));
+
+        LinearLayout songInfo = new LinearLayout(this);
+        songInfo.setGravity(Gravity.CENTER_VERTICAL);
+        shell.addView(songInfo, new LinearLayout.LayoutParams(-1, dp(76)));
+        LinearLayout songNames = new LinearLayout(this);
+        songNames.setOrientation(LinearLayout.VERTICAL);
+        songInfo.addView(songNames, new LinearLayout.LayoutParams(0, -2, 1));
+        fullTitle = new TextView(this);
+        fullTitle.setText(selected.title); fullTitle.setTextColor(Color.WHITE); fullTitle.setTextSize(23); fullTitle.setTypeface(null, 1); fullTitle.setMaxLines(1); fullTitle.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        songNames.addView(fullTitle);
+        fullArtist = new TextView(this);
+        fullArtist.setText(selected.artist); fullArtist.setTextColor(Color.rgb(180, 166, 224)); fullArtist.setTextSize(15);
+        LinearLayout.LayoutParams artistParams = new LinearLayout.LayoutParams(-1, -2); artistParams.topMargin = dp(4);
+        songNames.addView(fullArtist, artistParams);
+        TextView favorite = new TextView(this);
+        favorite.setText(favorites.contains(selected.id) ? "♥" : "♡"); favorite.setTextColor(Color.rgb(198, 174, 255)); favorite.setTextSize(31); favorite.setGravity(Gravity.CENTER);
+        songInfo.addView(favorite, new LinearLayout.LayoutParams(dp(48), dp(48)));
+        favorite.setOnClickListener(v -> {
+            Song song = songs.get(current);
+            if (favorites.contains(song.id)) favorites.remove(song.id); else favorites.add(song.id);
+            saveFavorites(); favorite.setText(favorites.contains(song.id) ? "♥" : "♡"); renderSongs();
         });
-        coverPulseAnimator.start();
-        fullTitle = new TextView(this); fullTitle.setTextColor(Color.WHITE); fullTitle.setTextSize(23); fullTitle.setTypeface(null, 1); fullTitle.setGravity(Gravity.CENTER); fullTitle.setMaxLines(2);
-        content.addView(fullTitle, new LinearLayout.LayoutParams(-1, -2));
-        fullArtist = new TextView(this); fullArtist.setTextColor(Color.rgb(195, 174, 255)); fullArtist.setTextSize(15); fullArtist.setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams artistParams = new LinearLayout.LayoutParams(-1, -2); artistParams.topMargin = dp(5); content.addView(fullArtist, artistParams);
-        progressBar = new SeekBar(this); progressBar.setMax(1000); progressBar.setProgressTintList(android.content.res.ColorStateList.valueOf(accent)); progressBar.setThumbTintList(android.content.res.ColorStateList.valueOf(accent));
-        LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(-1, -2); seekParams.topMargin = dp(18); content.addView(progressBar, seekParams);
-        LinearLayout times = new LinearLayout(this); times.setGravity(Gravity.CENTER_VERTICAL); content.addView(times, new LinearLayout.LayoutParams(-1, dp(22)));
-        elapsedText = new TextView(this); elapsedText.setTextColor(Color.LTGRAY); elapsedText.setTextSize(11); times.addView(elapsedText, new LinearLayout.LayoutParams(0, -2, 1));
-        durationText = new TextView(this); durationText.setTextColor(Color.LTGRAY); durationText.setTextSize(11); durationText.setGravity(Gravity.RIGHT); times.addView(durationText, new LinearLayout.LayoutParams(0, -2, 1));
+
+        progressBar = new SeekBar(this);
+        progressBar.setMax(1000);
+        progressBar.setProgressTintList(android.content.res.ColorStateList.valueOf(Color.rgb(155, 113, 255)));
+        progressBar.setThumbTintList(android.content.res.ColorStateList.valueOf(Color.WHITE));
+        progressBar.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(65, 61, 99)));
+        LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(-1, dp(28));
+        seekParams.topMargin = dp(8);
+        shell.addView(progressBar, seekParams);
+        LinearLayout times = new LinearLayout(this);
+        times.setGravity(Gravity.CENTER_VERTICAL);
+        shell.addView(times, new LinearLayout.LayoutParams(-1, dp(22)));
+        elapsedText = new TextView(this); elapsedText.setText("0:00"); elapsedText.setTextColor(Color.rgb(153, 151, 184)); elapsedText.setTextSize(11);
+        times.addView(elapsedText, new LinearLayout.LayoutParams(0, -2, 1));
+        durationText = new TextView(this); durationText.setText("0:00"); durationText.setTextColor(Color.rgb(153, 151, 184)); durationText.setTextSize(11); durationText.setGravity(Gravity.RIGHT);
+        times.addView(durationText, new LinearLayout.LayoutParams(0, -2, 1));
         progressBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) { if (fromUser && elapsedText != null) elapsedText.setText(formatTime(value * durationMillis / 1000)); }
             @Override public void onStartTrackingTouch(SeekBar bar) { userSeeking = true; }
@@ -947,25 +995,40 @@ public class MainActivity extends Activity {
                 startServiceCompat(seek);
             }
         });
-        LinearLayout controls = new LinearLayout(this); controls.setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams controlParams = new LinearLayout.LayoutParams(-1, dp(72)); controlParams.topMargin = dp(18); content.addView(controls, controlParams);
-        TextView previous = playerControl("⏮", 25), play = playerControl("⏯", 32), next = playerControl("⏭", 25);
-        controls.addView(previous, new LinearLayout.LayoutParams(dp(64), dp(58)));
-        controls.addView(play, new LinearLayout.LayoutParams(dp(80), dp(62)));
-        controls.addView(next, new LinearLayout.LayoutParams(dp(64), dp(58)));
+
+        LinearLayout controls = new LinearLayout(this);
+        controls.setGravity(Gravity.CENTER);
+        controls.setBaselineAligned(false);
+        LinearLayout.LayoutParams controlsParams = new LinearLayout.LayoutParams(-1, dp(94));
+        controlsParams.topMargin = dp(6);
+        shell.addView(controls, controlsParams);
+        TextView shuffle = simplePlayerButton("⤨", 23);
+        TextView previous = simplePlayerButton("|◀", 25);
+        TextView play = playerControl("⏸", 31);
+        TextView next = simplePlayerButton("▶|", 25);
+        TextView repeat = simplePlayerButton("⟳", 25);
+        controls.addView(shuffle, new LinearLayout.LayoutParams(0, dp(58), 1));
+        controls.addView(previous, new LinearLayout.LayoutParams(0, dp(58), 1));
+        controls.addView(play, new LinearLayout.LayoutParams(dp(76), dp(76)));
+        controls.addView(next, new LinearLayout.LayoutParams(0, dp(58), 1));
+        controls.addView(repeat, new LinearLayout.LayoutParams(0, dp(58), 1));
+        shuffle.setOnClickListener(v -> startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_SHUFFLE)));
         previous.setOnClickListener(v -> startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_PREVIOUS)));
         next.setOnClickListener(v -> startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_NEXT)));
+        repeat.setOnClickListener(v -> startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_REPEAT)));
         play.setOnClickListener(v -> togglePlayback());
-        TextView tools = new TextView(this); tools.setText("🔀 عشوائي     🔁 تكرار     🎚 معادل الصوت     ⏱ مؤقت النوم"); tools.setTextColor(accent); tools.setGravity(Gravity.CENTER); tools.setTextSize(12);
-        LinearLayout.LayoutParams toolsParams = new LinearLayout.LayoutParams(-1, dp(44)); toolsParams.topMargin = dp(5); content.addView(tools, toolsParams);
-        tools.setOnClickListener(v -> new AlertDialog.Builder(this).setTitle("أدوات التشغيل").setItems(new String[]{"تبديل التشغيل العشوائي", "تبديل التكرار", "فتح معادل الصوت", "مؤقت النوم"}, (d, which) -> {
-            if (which == 0) startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_SHUFFLE));
-            else if (which == 1) startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_REPEAT));
-            else if (which == 2) startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_EQUALIZER));
-            else showSleepTimer();
-        }).show());
-        if (current >= 0 && current < songs.size()) { fullTitle.setText(songs.get(current).title); fullArtist.setText(songs.get(current).artist); }
-        AlertDialog dialog = new AlertDialog.Builder(this).setView(content).setNegativeButton("إغلاق", null).create();
+
+        LinearLayout tools = new LinearLayout(this);
+        tools.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams toolsParams = new LinearLayout.LayoutParams(-1, dp(66));
+        toolsParams.topMargin = dp(10);
+        shell.addView(tools, toolsParams);
+        addPlayerTool(tools, "♫", "الكلمات", () -> showLyrics());
+        addPlayerTool(tools, "☷", "المعادل", () -> startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_EQUALIZER)));
+        addPlayerTool(tools, "☾", "مؤقت النوم", () -> showSleepTimer());
+        addPlayerTool(tools, "•••", "المزيد", () -> more.performClick());
+
+        AlertDialog dialog = new AlertDialog.Builder(this).setView(shell).setNegativeButton("إغلاق", null).create();
         fullPlayerDialog = dialog;
         dialog.setOnDismissListener(d -> {
             fullPlayerDialog = null; progressBar = null; fullTitle = null; fullArtist = null; elapsedText = null; durationText = null;
@@ -974,8 +1037,52 @@ public class MainActivity extends Activity {
             if (coverPulseAnimator != null) { coverPulseAnimator.cancel(); coverPulseAnimator = null; }
         });
         dialog.show();
-        if (dialog.getWindow() != null) { dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent); dialog.getWindow().setLayout(-1, -1); }
-        playerUiHandler.removeCallbacks(playerUiUpdater); playerUiHandler.post(playerUiUpdater);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            dialog.getWindow().setLayout(-1, -1);
+        }
+        playerUiHandler.removeCallbacks(playerUiUpdater);
+        playerUiHandler.post(playerUiUpdater);
+    }
+
+    private TextView simplePlayerButton(String label, int size) {
+        TextView t = new TextView(this);
+        t.setText(label); t.setTextSize(size); t.setTextColor(Color.rgb(192, 184, 230)); t.setGravity(Gravity.CENTER);
+        t.setBackground(makePill(Color.rgb(25, 24, 48)));
+        t.setOnTouchListener((v, event) -> {
+            if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) v.animate().scaleX(0.94f).scaleY(0.94f).setDuration(90).start();
+            else if (event.getAction() == android.view.MotionEvent.ACTION_UP || event.getAction() == android.view.MotionEvent.ACTION_CANCEL) v.animate().scaleX(1f).scaleY(1f).setDuration(140).start();
+            return false;
+        });
+        return t;
+    }
+
+    private void addPlayerTool(LinearLayout parent, String symbol, String label, Runnable action) {
+        LinearLayout item = new LinearLayout(this);
+        item.setOrientation(LinearLayout.VERTICAL);
+        item.setGravity(Gravity.CENTER);
+        item.setPadding(dp(3), dp(5), dp(3), dp(5));
+        parent.addView(item, new LinearLayout.LayoutParams(0, -1, 1));
+        TextView icon = new TextView(this);
+        icon.setText(symbol); icon.setTextColor(Color.rgb(197, 181, 255)); icon.setTextSize(21); icon.setGravity(Gravity.CENTER);
+        item.addView(icon, new LinearLayout.LayoutParams(-1, dp(30)));
+        TextView caption = new TextView(this);
+        caption.setText(label); caption.setTextColor(Color.rgb(203, 199, 224)); caption.setTextSize(10); caption.setGravity(Gravity.CENTER);
+        item.addView(caption);
+        item.setOnClickListener(v -> action.run());
+        item.setOnTouchListener((v, event) -> {
+            if (event.getAction() == android.view.MotionEvent.ACTION_DOWN) v.animate().scaleX(0.96f).scaleY(0.96f).setDuration(90).start();
+            else if (event.getAction() == android.view.MotionEvent.ACTION_UP || event.getAction() == android.view.MotionEvent.ACTION_CANCEL) v.animate().scaleX(1f).scaleY(1f).setDuration(140).start();
+            return false;
+        });
+    }
+
+    private void showLyrics() {
+        Song song = current >= 0 && current < songs.size() ? songs.get(current) : null;
+        if (song == null) { Toast.makeText(this, "اختار أغنية الأول", Toast.LENGTH_SHORT).show(); return; }
+        new AlertDialog.Builder(this).setTitle("كلمات الأغنية")
+            .setMessage("الأغنية: " + song.title + "\nالفنان: " + song.artist + "\n\nلا توجد كلمات محفوظة لهذه الأغنية على الجهاز.\nيمكن إضافة كلمات محلية لاحقًا.")
+            .setPositiveButton("حسنًا", null).show();
     }
 
     private TextView playerControl(String label, int size) {
