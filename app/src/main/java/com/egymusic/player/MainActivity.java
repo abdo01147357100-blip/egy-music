@@ -224,6 +224,42 @@ public class MainActivity extends Activity {
         playlistsTab.setOnClickListener(v -> { libraryMode = 4; showFavorites = false; activePlaylist = null; updateTabs(); renderSongs(); });
         updateTabs();
 
+        LinearLayout libraryHeader = new LinearLayout(this);
+        libraryHeader.setGravity(Gravity.CENTER_VERTICAL);
+        libraryHeader.setPadding(dp(4), dp(3), dp(4), dp(7));
+        root.addView(libraryHeader, new LinearLayout.LayoutParams(-1, dp(54)));
+
+        LinearLayout libraryHeading = new LinearLayout(this);
+        libraryHeading.setOrientation(LinearLayout.VERTICAL);
+        libraryHeader.addView(libraryHeading, new LinearLayout.LayoutParams(0, -2, 1));
+        TextView libraryTitle = new TextView(this);
+        libraryTitle.setText("مكتبتك الموسيقية");
+        libraryTitle.setTextColor(Color.WHITE);
+        libraryTitle.setTextSize(18);
+        libraryTitle.setTypeface(null, 1);
+        libraryHeading.addView(libraryTitle);
+        libraryCount = new TextView(this);
+        libraryCount.setText("جاري تحميل الأغاني...");
+        libraryCount.setTextColor(Color.rgb(155, 155, 160));
+        libraryCount.setTextSize(11);
+        libraryHeading.addView(libraryCount);
+
+        TextView playAll = new TextView(this);
+        playAll.setText("▶  تشغيل الكل");
+        playAll.setTextColor(Color.WHITE);
+        playAll.setTextSize(12);
+        playAll.setGravity(Gravity.CENTER);
+        playAll.setPadding(dp(12), 0, dp(12), 0);
+        GradientDrawable playAllBg = new GradientDrawable();
+        playAllBg.setColor(Color.rgb(239, 151, 145));
+        playAllBg.setCornerRadius(dp(20));
+        playAll.setBackground(playAllBg);
+        libraryHeader.addView(playAll, new LinearLayout.LayoutParams(dp(112), dp(36)));
+        playAll.setOnClickListener(v -> {
+            if (songs.isEmpty()) Toast.makeText(this, "مفيش أغاني للتشغيل", Toast.LENGTH_SHORT).show();
+            else playIndex(0);
+        });
+
         list = new LinearLayout(this);
         list.setOrientation(LinearLayout.VERTICAL);
         ScrollView scroll = new ScrollView(this);
@@ -281,6 +317,51 @@ public class MainActivity extends Activity {
         miniArtwork.setBackground(makePill(panel));
         miniRow.addView(miniArtwork, new LinearLayout.LayoutParams(dp(62), dp(62)));
         miniArtwork.setOnClickListener(v -> showFullPlayer());
+
+        LinearLayout bottomNav = new LinearLayout(this);
+        bottomNav.setGravity(Gravity.CENTER);
+        bottomNav.setPadding(dp(3), dp(2), dp(3), 0);
+        root.addView(bottomNav, new LinearLayout.LayoutParams(-1, dp(48)));
+        addBottomNavItem(bottomNav, "⌂", "الرئيسية", true, () -> {
+            libraryMode = 0; activePlaylist = null; showFavorites = false; updateTabs(); renderSongs();
+        });
+        addBottomNavItem(bottomNav, "⌕", "بحث", false, () -> {
+            search.setVisibility(View.VISIBLE);
+            search.requestFocus();
+            ((android.view.inputmethod.InputMethodManager)getSystemService(INPUT_METHOD_SERVICE))
+                .showSoftInput(search, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+        });
+        addBottomNavItem(bottomNav, "♫", "مكتبتي", false, () -> {
+            libraryMode = 0; activePlaylist = null; showFavorites = false; updateTabs(); renderSongs();
+            tabScroller.smoothScrollTo(0, 0);
+        });
+        addBottomNavItem(bottomNav, "⚙", "الإعدادات", false, () ->
+            new AlertDialog.Builder(this).setTitle("إعدادات EGY MUSIC")
+                .setItems(new String[]{"معادل الصوت", "مؤقت النوم", "تحديث مكتبة الأغاني"}, (d, which) -> {
+                    if (which == 0) startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_EQUALIZER));
+                    else if (which == 1) showSleepTimer();
+                    else loadSongs();
+                }).show());
+    }
+
+    private void addBottomNavItem(LinearLayout nav, String symbol, String label, boolean active, Runnable action) {
+        LinearLayout item = new LinearLayout(this);
+        item.setOrientation(LinearLayout.VERTICAL);
+        item.setGravity(Gravity.CENTER);
+        nav.addView(item, new LinearLayout.LayoutParams(0, -1, 1));
+        TextView glyph = new TextView(this);
+        glyph.setText(symbol);
+        glyph.setTextSize(21);
+        glyph.setGravity(Gravity.CENTER);
+        glyph.setTextColor(active ? accent : Color.rgb(145, 145, 150));
+        item.addView(glyph);
+        TextView caption = new TextView(this);
+        caption.setText(label);
+        caption.setTextSize(9);
+        caption.setGravity(Gravity.CENTER);
+        caption.setTextColor(active ? Color.WHITE : Color.rgb(145, 145, 150));
+        item.addView(caption);
+        item.setOnClickListener(v -> action.run());
     }
 
     private LinearLayout.LayoutParams tabLayoutParams(int widthDp) {
@@ -370,7 +451,7 @@ public class MainActivity extends Activity {
             final int index = i;
             LinearLayout row = new LinearLayout(this);
             row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setPadding(dp(4), dp(10), dp(4), dp(10));
+            row.setPadding(dp(4), dp(8), dp(4), dp(8));
             row.setBackgroundColor(Color.TRANSPARENT);
             LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, -2);
             rp.bottomMargin = dp(2);
@@ -388,7 +469,7 @@ public class MainActivity extends Activity {
                 icon.setColorFilter(accent);
             }
             icon.setClipToOutline(true);
-            row.addView(icon, new LinearLayout.LayoutParams(dp(70), dp(70)));
+            row.addView(icon, new LinearLayout.LayoutParams(dp(66), dp(66)));
 
             LinearLayout labels = new LinearLayout(this);
             labels.setOrientation(LinearLayout.VERTICAL);
@@ -397,7 +478,7 @@ public class MainActivity extends Activity {
             TextView title = new TextView(this);
             title.setText(song.title);
             title.setTextColor(Color.WHITE);
-            title.setTextSize(14);
+            title.setTextSize(15);
             title.setMaxLines(1);
             labels.addView(title);
             TextView artist = new TextView(this);
