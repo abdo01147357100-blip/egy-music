@@ -153,17 +153,29 @@ public class PlaybackService extends Service {
     }
 
     private void openEqualizer() {
+        int sessionId = 0;
+        try {
+            if (player != null) sessionId = player.getAudioSessionId();
+        } catch (Exception ignored) {}
+        // Prefer the device's own effects panel when it exists.
         try {
             Intent intent = new Intent(android.media.audiofx.AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL);
             intent.putExtra(android.media.audiofx.AudioEffect.EXTRA_PACKAGE_NAME, getPackageName());
-            intent.putExtra(android.media.audiofx.AudioEffect.EXTRA_AUDIO_SESSION, player != null ? player.getAudioSessionId() : 0);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            if (intent.resolveActivity(getPackageManager()) != null) startActivity(intent);
-            else android.widget.Toast.makeText(this, "معادل الصوت غير متاح على هذا الجهاز", android.widget.Toast.LENGTH_LONG).show();
+            intent.putExtra(android.media.audiofx.AudioEffect.EXTRA_AUDIO_SESSION, sessionId);
+            if (intent.resolveActivity(getPackageManager()) != null) {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                return;
+            }
         } catch (Exception e) {
-            Log.w("EGY MUSIC", "Equalizer panel unavailable", e);
-            android.widget.Toast.makeText(this, "تعذر فتح معادل الصوت على هذا الجهاز", android.widget.Toast.LENGTH_LONG).show();
+            Log.i("EGY MUSIC", "Device equalizer panel unavailable; opening built-in controls", e);
         }
+        // Many phones expose the Equalizer API but do not ship a separate panel app.
+        Intent fallback = new Intent(this, MainActivity.class);
+        fallback.setAction("com.egymusic.player.OPEN_EQUALIZER");
+        fallback.putExtra("audio_session_id", sessionId);
+        fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(fallback);
     }
 
     private void playIndex(int index) {
