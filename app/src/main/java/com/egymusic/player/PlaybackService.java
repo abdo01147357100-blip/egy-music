@@ -193,10 +193,21 @@ public class PlaybackService extends Service {
             player.setDataSource(this, Uri.parse(uris.get(index)));
             player.setOnPreparedListener(mp -> {
                 if (player != mp) return;
-                prepared = true;
-                mp.start();
-                updateSession(PlaybackState.STATE_PLAYING);
-                showNotification(true);
+                try {
+                    prepared = true;
+                    mp.start();
+                    updateSession(PlaybackState.STATE_PLAYING);
+                    showNotification(true);
+                    broadcastProgress();
+                } catch (Exception e) {
+                    Log.e("EGY MUSIC", "Playback start failed after prepare", e);
+                    prepared = false;
+                    android.widget.Toast.makeText(getApplicationContext(),
+                            "الملف اتحمّل لكن التشغيل فشل. جرّب ملف MP3 آخر وارفع صوت الموبايل.",
+                            android.widget.Toast.LENGTH_LONG).show();
+                    updateSession(PlaybackState.STATE_ERROR);
+                    showNotification(false);
+                }
             });
             player.setOnCompletionListener(mp -> {
                 if (repeatEnabled && current >= 0) playIndex(current);
@@ -211,9 +222,10 @@ public class PlaybackService extends Service {
                 Log.e("EGY MUSIC", "MediaPlayer error: " + what + "/" + extra);
                 prepared = false;
                 android.widget.Toast.makeText(getApplicationContext(),
-                        "تعذر تشغيل الملف الصوتي. جرّب أغنية أخرى أو تحقق من صلاحية ملفات الصوت.",
+                        "تعذر تشغيل الملف الصوتي. جرّب أغنية أخرى أو تأكد أن الملف ليس تالفًا.",
                         android.widget.Toast.LENGTH_LONG).show();
                 updateSession(PlaybackState.STATE_ERROR);
+                broadcastProgress();
                 showNotification(false);
                 return true;
             });
@@ -221,9 +233,18 @@ public class PlaybackService extends Service {
             startForeground(NOTIFICATION_ID, buildNotification(false));
             player.prepareAsync();
         } catch (Exception e) {
-            Log.e("EGY MUSIC", "Unable to play audio", e);
+            Log.e("EGY MUSIC", "Unable to play audio URI: " + (index < uris.size() ? uris.get(index) : "invalid index"), e);
             releasePlayer();
-            stopForeground(true);
+            android.widget.Toast.makeText(getApplicationContext(),
+                    "فشل فتح الأغنية. تأكد إن ملف الصوت موجود وإن EGY MUSIC مسموح له بالوصول للملفات.",
+                    android.widget.Toast.LENGTH_LONG).show();
+            updateSession(PlaybackState.STATE_ERROR);
+            broadcastProgress();
+            try {
+                stopForeground(true);
+                NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                if (manager != null) manager.cancel(NOTIFICATION_ID);
+            } catch (Exception ignored) {}
         }
     }
 
