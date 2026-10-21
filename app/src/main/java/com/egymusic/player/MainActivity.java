@@ -56,8 +56,8 @@ public class MainActivity extends Activity {
     private EditText search;
     private boolean showFavorites = false;
     private int libraryMode = 0;
-    private int accent = Color.rgb(239, 151, 145);
-    private int panel = Color.rgb(30, 48, 34);
+    private int accent = Color.rgb(167, 139, 250);
+    private int panel = Color.rgb(24, 24, 43);
     private SharedPreferences prefs;
     private AlertDialog fullPlayerDialog;
     private ValueAnimator playerBackgroundAnimator;
@@ -237,8 +237,8 @@ public class MainActivity extends Activity {
     private void buildUi() {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(12), dp(8), dp(12), dp(6));
-        root.setBackgroundColor(Color.rgb(8, 8, 10));
+        root.setPadding(dp(16), dp(10), dp(16), dp(8));
+        root.setBackgroundColor(Color.rgb(8, 10, 20));
         setContentView(root);
 
         LinearLayout header = new LinearLayout(this);
@@ -294,7 +294,7 @@ public class MainActivity extends Activity {
         search.setTextColor(Color.WHITE);
         search.setPadding(dp(14), 0, dp(14), 0);
         GradientDrawable searchBg = new GradientDrawable();
-        searchBg.setColor(Color.rgb(24, 24, 27));
+        searchBg.setColor(Color.rgb(22, 24, 40));
         searchBg.setCornerRadius(dp(22));
         search.setBackground(searchBg);
         search.setVisibility(View.VISIBLE);
@@ -311,79 +311,104 @@ public class MainActivity extends Activity {
             @Override public void afterTextChanged(Editable e) {}
         });
 
-        // Redesigned home feature: a real dashboard panel with a featured action and visualizer.
+        // EGY MUSIC Studio home: featured listening panel with an original violet/night identity.
         LinearLayout hero = new LinearLayout(this);
-        hero.setOrientation(LinearLayout.HORIZONTAL);
-        hero.setGravity(Gravity.CENTER_VERTICAL);
-        hero.setPadding(dp(20), dp(18), dp(18), dp(18));
+        hero.setOrientation(LinearLayout.VERTICAL);
+        hero.setPadding(dp(20), dp(18), dp(18), dp(16));
         GradientDrawable heroBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                new int[]{Color.rgb(18, 76, 52), Color.rgb(12, 39, 32), Color.rgb(18, 24, 25)});
-        heroBg.setCornerRadius(dp(26));
-        heroBg.setStroke(dp(1), Color.rgb(56, 103, 75));
+                new int[]{Color.rgb(78, 47, 153), Color.rgb(35, 30, 82), Color.rgb(18, 23, 44)});
+        heroBg.setCornerRadius(dp(28));
+        heroBg.setStroke(dp(1), Color.rgb(104, 84, 177));
         hero.setBackground(heroBg);
-        LinearLayout.LayoutParams heroParams = new LinearLayout.LayoutParams(-1, dp(154));
-        heroParams.topMargin = dp(6);
-        heroParams.bottomMargin = dp(10);
+        LinearLayout.LayoutParams heroParams = new LinearLayout.LayoutParams(-1, dp(172));
+        heroParams.topMargin = dp(5);
+        heroParams.bottomMargin = dp(12);
         root.addView(hero, heroParams);
 
+        LinearLayout heroTop = new LinearLayout(this);
+        heroTop.setGravity(Gravity.CENTER_VERTICAL);
+        hero.addView(heroTop, new LinearLayout.LayoutParams(-1, 0, 1));
         LinearLayout heroCopy = new LinearLayout(this);
         heroCopy.setOrientation(LinearLayout.VERTICAL);
-        hero.addView(heroCopy, new LinearLayout.LayoutParams(0, -1, 1));
+        heroTop.addView(heroCopy, new LinearLayout.LayoutParams(0, -1, 1));
         TextView heroEyebrow = new TextView(this);
-        heroEyebrow.setText("EGY MUSIC  /  YOUR LIBRARY");
-        heroEyebrow.setTextColor(Color.rgb(151, 220, 174));
+        heroEyebrow.setText("EGY MUSIC  •  MUSIC STUDIO");
+        heroEyebrow.setTextColor(Color.rgb(207, 190, 255));
         heroEyebrow.setTextSize(10);
         heroEyebrow.setLetterSpacing(0.12f);
         heroCopy.addView(heroEyebrow);
         TextView heroTitle = new TextView(this);
-        heroTitle.setText("اسمعها\nعلى مزاجك");
+        heroTitle.setText("موسيقاك.\nعالمك الخاص.");
         heroTitle.setTextColor(Color.WHITE);
         heroTitle.setTextSize(25);
-        heroTitle.setLineSpacing(0, 0.94f);
+        heroTitle.setLineSpacing(0, 0.95f);
         heroTitle.setTypeface(null, 1);
         LinearLayout.LayoutParams heroTitleParams = new LinearLayout.LayoutParams(-1, 0, 1);
-        heroTitleParams.topMargin = dp(8);
+        heroTitleParams.topMargin = dp(7);
         heroCopy.addView(heroTitle, heroTitleParams);
         TextView heroSubtitle = new TextView(this);
-        heroSubtitle.setText("كل أغانيك في مكان واحد");
-        heroSubtitle.setTextColor(Color.rgb(192, 211, 198));
-        heroSubtitle.setTextSize(12);
+        heroSubtitle.setText("مكتبتك كلها — بصوتك ومزاجك");
+        heroSubtitle.setTextColor(Color.rgb(211, 207, 233));
+        heroSubtitle.setTextSize(11);
         heroCopy.addView(heroSubtitle);
 
-        LinearLayout heroVisual = new LinearLayout(this);
-        heroVisual.setOrientation(LinearLayout.VERTICAL);
-        heroVisual.setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams visualParams = new LinearLayout.LayoutParams(dp(104), -1);
-        visualParams.leftMargin = dp(8);
-        hero.addView(heroVisual, visualParams);
-        FrameLayout disc = new FrameLayout(this);
-        GradientDrawable discBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                new int[]{Color.rgb(92, 205, 133), Color.rgb(24, 115, 75)});
-        discBg.setShape(GradientDrawable.OVAL);
-        disc.setBackground(discBg);
-        heroVisual.addView(disc, new LinearLayout.LayoutParams(dp(76), dp(76)));
-        TextView discIcon = new TextView(this);
-        discIcon.setText("▶");
-        discIcon.setTextColor(Color.rgb(9, 34, 23));
-        discIcon.setTextSize(26);
-        discIcon.setGravity(Gravity.CENTER);
-        disc.addView(discIcon, new FrameLayout.LayoutParams(-1, -1));
-        TextView visualizer = new TextView(this);
-        visualizer.setText("▂ ▅ ▇ ▄ ▆ ▃");
-        visualizer.setTextColor(Color.rgb(127, 221, 158));
-        visualizer.setTextSize(17);
-        visualizer.setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams visualizerParams = new LinearLayout.LayoutParams(-1, dp(28));
-        visualizerParams.topMargin = dp(8);
-        heroVisual.addView(visualizer, visualizerParams);
-        disc.setOnClickListener(v -> {
+        FrameLayout albumOrb = new FrameLayout(this);
+        GradientDrawable orbBg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                new int[]{Color.rgb(207, 187, 255), Color.rgb(111, 72, 222), Color.rgb(42, 34, 99)});
+        orbBg.setShape(GradientDrawable.OVAL);
+        albumOrb.setBackground(orbBg);
+        LinearLayout.LayoutParams orbParams = new LinearLayout.LayoutParams(dp(100), dp(100));
+        orbParams.leftMargin = dp(8);
+        heroTop.addView(albumOrb, orbParams);
+        TextView orbGlyph = new TextView(this);
+        orbGlyph.setText("♫");
+        orbGlyph.setTextColor(Color.WHITE);
+        orbGlyph.setTextSize(48);
+        orbGlyph.setGravity(Gravity.CENTER);
+        albumOrb.addView(orbGlyph, new FrameLayout.LayoutParams(-1, -1));
+        TextView heroAction = new TextView(this);
+        heroAction.setText("▶   ابدأ الاستماع");
+        heroAction.setTextColor(Color.WHITE);
+        heroAction.setTextSize(12);
+        heroAction.setTypeface(null, 1);
+        heroAction.setGravity(Gravity.CENTER);
+        GradientDrawable heroActionBg = new GradientDrawable();
+        heroActionBg.setColor(Color.rgb(126, 92, 246));
+        heroActionBg.setCornerRadius(dp(18));
+        heroAction.setBackground(heroActionBg);
+        LinearLayout.LayoutParams heroActionParams = new LinearLayout.LayoutParams(dp(142), dp(34));
+        heroActionParams.topMargin = dp(8);
+        hero.addView(heroAction, heroActionParams);
+        View.OnClickListener startListening = v -> {
             if (songs.isEmpty()) Toast.makeText(this, "مفيش أغاني للتشغيل", Toast.LENGTH_SHORT).show();
             else playIndex(current >= 0 ? current : 0);
-        });
-        visualizer.setOnClickListener(v -> {
+        };
+        albumOrb.setOnClickListener(startListening);
+        heroAction.setOnClickListener(startListening);
+
+        // Feature shortcuts are real actions, not decorative cards.
+        HorizontalScrollView quickScroll = new HorizontalScrollView(this);
+        quickScroll.setHorizontalScrollBarEnabled(false);
+        quickScroll.setFillViewport(false);
+        LinearLayout quickActions = new LinearLayout(this);
+        quickActions.setOrientation(LinearLayout.HORIZONTAL);
+        quickActions.setPadding(0, 0, 0, dp(3));
+        quickScroll.addView(quickActions);
+        LinearLayout.LayoutParams quickParams = new LinearLayout.LayoutParams(-1, dp(76));
+        quickParams.bottomMargin = dp(8);
+        root.addView(quickScroll, quickParams);
+        addQuickAction(quickActions, "⤨", "خلط الكل", "تشغيل عشوائي", () -> {
             if (songs.isEmpty()) Toast.makeText(this, "مفيش أغاني للتشغيل", Toast.LENGTH_SHORT).show();
             else playIndex(new java.util.Random().nextInt(songs.size()));
         });
+        addQuickAction(quickActions, "♥", "المفضلة", "أغانيك المحبوبة", () -> {
+            libraryMode = 3; showFavorites = true; activePlaylist = null; updateTabs(); renderSongs();
+        });
+        addQuickAction(quickActions, "♫", "قوائمك", "رتّب مزاجك", () -> {
+            libraryMode = 4; showFavorites = false; activePlaylist = null; updateTabs(); renderSongs();
+        });
+        addQuickAction(quickActions, "≋", "المعادل", "تحكم في الصوت", () ->
+            startServiceCompat(new Intent(this, PlaybackService.class).setAction(PlaybackService.ACTION_EQUALIZER)));
 
         HorizontalScrollView tabScroller = new HorizontalScrollView(this);
         tabScroller.setHorizontalScrollBarEnabled(false);
@@ -437,7 +462,7 @@ public class MainActivity extends Activity {
         playAll.setGravity(Gravity.CENTER);
         playAll.setPadding(dp(12), 0, dp(12), 0);
         GradientDrawable playAllBg = new GradientDrawable();
-        playAllBg.setColor(Color.rgb(239, 151, 145));
+        playAllBg.setColor(Color.rgb(126, 92, 246));
         playAllBg.setCornerRadius(dp(20));
         playAll.setBackground(playAllBg);
         libraryHeader.addView(playAll, new LinearLayout.LayoutParams(dp(112), dp(36)));
@@ -499,7 +524,7 @@ public class MainActivity extends Activity {
         miniArtwork = new ImageView(this);
         miniArtwork.setScaleType(ImageView.ScaleType.CENTER_CROP);
         miniArtwork.setImageResource(android.R.drawable.ic_media_play);
-        miniArtwork.setColorFilter(Color.rgb(239, 151, 145));
+        miniArtwork.setColorFilter(Color.rgb(167, 139, 250));
         miniArtwork.setBackground(makePill(panel));
         miniRow.addView(miniArtwork, new LinearLayout.LayoutParams(dp(62), dp(62)));
         miniArtwork.setOnClickListener(v -> showFullPlayer());
@@ -530,6 +555,44 @@ public class MainActivity extends Activity {
                     else if (which == 1) showSleepTimer();
                     else loadSongs();
                 }).show());
+    }
+
+    private void addQuickAction(LinearLayout parent, String glyphText, String titleText, String subText, Runnable action) {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setPadding(dp(12), dp(8), dp(12), dp(8));
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(Color.rgb(20, 23, 41));
+        bg.setCornerRadius(dp(17));
+        bg.setStroke(dp(1), Color.rgb(43, 43, 72));
+        card.setBackground(bg);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(142), dp(68));
+        params.rightMargin = dp(8);
+        parent.addView(card, params);
+        LinearLayout line = new LinearLayout(this);
+        line.setGravity(Gravity.CENTER_VERTICAL);
+        card.addView(line);
+        TextView glyph = new TextView(this);
+        glyph.setText(glyphText);
+        glyph.setTextColor(accent);
+        glyph.setTextSize(21);
+        glyph.setGravity(Gravity.CENTER);
+        line.addView(glyph, new LinearLayout.LayoutParams(dp(28), dp(30)));
+        TextView title = new TextView(this);
+        title.setText(titleText);
+        title.setTextColor(Color.WHITE);
+        title.setTextSize(12);
+        title.setTypeface(null, 1);
+        title.setPadding(dp(5), 0, 0, 0);
+        line.addView(title);
+        TextView subtitle = new TextView(this);
+        subtitle.setText(subText);
+        subtitle.setTextColor(Color.rgb(157, 160, 188));
+        subtitle.setTextSize(9);
+        subtitle.setPadding(dp(33), 0, 0, 0);
+        card.addView(subtitle);
+        card.setOnClickListener(v -> action.run());
     }
 
     private void addBottomNavItem(LinearLayout nav, String symbol, String label, boolean active, Runnable action) {
